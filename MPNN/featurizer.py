@@ -1,4 +1,3 @@
-#%%
 from rdkit import Chem
 import numpy as np
 import logging
@@ -163,8 +162,8 @@ class CustomFeaturizer(MolecularFeaturizer):
         dest: List[int] = []
         for bond in datapoint.GetBonds():
             start, end = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
-            src += [start]
-            dest += [end]
+            src += [start, end]
+            dest += [end, start]
         return np.asarray([src, dest], dtype=int)
 
     def _featurize(self, datapoint: RDKitMol, **kwargs) -> GraphData:
@@ -195,8 +194,11 @@ class CustomFeaturizer(MolecularFeaturizer):
             [atom_features(atom) for atom in datapoint.GetAtoms()], dtype=float)
 
         # get edge(bond) features
-        f_bonds: np.ndarray = np.asarray(
-            [bond_features(bond) for bond in datapoint.GetBonds()], dtype=float)
+        f_bonds_list = []
+        for bond in datapoint.GetBonds():
+            b_feat = 2 * [bond_features(bond)]
+            f_bonds_list.extend(b_feat)
+        f_bonds: np.ndarray = np.asarray(f_bonds_list, dtype=float)
 
         # get edge index
         edge_index: np.ndarray = self._construct_bond_index(datapoint)
@@ -205,4 +207,25 @@ class CustomFeaturizer(MolecularFeaturizer):
                          edge_index=edge_index,
                          edge_features=f_bonds)
 
-# %%
+# # %%
+# import torch
+# featurizer = CustomFeaturizer()
+# graph = featurizer.featurize('O=C=O')[0]
+# g = graph.to_dgl_graph(self_loop = False)
+
+# bond_ft = torch.Tensor([[10.],[20.],[30.],[40.]])
+# g.edata['edge_attr'] = bond_ft
+# embeddings = torch.Tensor([[1.,2.], [1., 2.], [9., 11.]])
+# g.ndata['emb'] = embeddings
+# def message_func(edges):
+#     src_msg = torch.cat((edges.src['emb'], edges.data['edge_attr']), dim=1)
+#     return {'src_msg': src_msg}
+
+# def reduce_func(nodes):
+#     src_msg_sum = torch.sum(nodes.mailbox['src_msg'], dim=1)
+#     return {'src_msg_sum': src_msg_sum}
+# g.send_and_recv(g.edges(), message_func=message_func, reduce_func=reduce_func)
+# molecule_hidden_state: torch.Tensor = torch.sum(g.ndata['src_msg_sum'], dim=0)
+# # tensor([ 20.,  26., 100.]) required
+
+# # %%

@@ -11,6 +11,16 @@ from custom_ffn import CustomPositionwiseFeedForward
 
 from utils.loss_func import CustomMultiLabelLoss
 
+try:
+    import dgl
+except:
+    raise ImportError('This class requires dgl.')
+
+try:
+    from dgllife.model import MPNNGNN
+except:
+    raise ImportError('This class requires dgllife.')
+
 
 class CustomMPNN(nn.Module):
     """Model for Graph Property Prediction.
@@ -112,15 +122,6 @@ class CustomMPNN(nn.Module):
         ffn_dropout_at_input_no_act: bool
             If true, dropout is applied on the input tensor. For single layer, it is not passed to an activation function.
         """
-        try:
-            import dgl  # noqa: F401
-        except:
-            raise ImportError('This class requires dgl.')
-        try:
-            import dgllife  # noqa: F401
-        except:
-            raise ImportError('This class requires dgllife.')
-
         if mode not in ['classification', 'regression']:
             raise ValueError(
                 "mode must be either 'classification' or 'regression'")
@@ -142,58 +143,79 @@ class CustomMPNN(nn.Module):
         else:
             self.ffn_output = n_tasks
 
-        from dgllife.model import MPNNGNN
-
         self.mpnn = MPNNGNN(node_in_feats=number_atom_features,
                            node_out_feats=node_out_feats,
                            edge_in_feats=number_bond_features,
                            edge_hidden_feats=edge_hidden_feats,
                            num_step_message_passing=num_step_message_passing)
         
-        ffn_hidden_list.append(ffn_embeddings)
+        if ffn_embeddings is not None:
+            ffn_hidden_list.append(ffn_embeddings)
 
         self.ffn: nn.Module = CustomPositionwiseFeedForward(
-            d_input=node_out_feats,
+            d_input=node_out_feats + number_bond_features,
             d_hidden_list=ffn_hidden_list,
             d_output=self.ffn_output,
             activation=ffn_activation,
             dropout_p=ffn_dropout_p,
             dropout_at_input_no_act=ffn_dropout_at_input_no_act)
 
-    def _readout(self, atoms_hidden_states: torch.Tensor,
-                 molecules_unbatch_key) -> torch.Tensor:
+    def _readout(self, g, atoms_hidden_states: torch.Tensor) -> torch.Tensor:
         """
         Method to execute the readout phase. (compute molecules encodings from atom hidden states)
 
         Parameters
         ----------
+         g: DGLGraph
+            A DGLGraph for a batch of graphs. It stores the node features in
+            ``dgl_graph.ndata[self.nfeat_name]`` and edge features in
+            ``dgl_graph.edata[self.efeat_name]``.
+
         atoms_hidden_states: torch.Tensor
             Tensor containing atom hidden states.
-        molecules_unbatch_key: List
-            List containing number of atoms in various molecules of a batch
 
         Returns
         -------
         molecule_hidden_state: torch.Tensor
             Tensor containing molecule encodings.
         """
-        mol_vecs = []
-        atoms_hidden_states_split = torch.split(
-            atoms_hidden_states, molecules_unbatch_key)
-        mol_vec: torch.Tensor
-        for mol_vec in atoms_hidden_states_split:
-            if self.aggregation == 'mean':
-                mol_vec = mol_vec.sum(dim=0) / len(mol_vec)
-            elif self.aggregation == 'sum':
-                mol_vec = mol_vec.sum(dim=0)
-            elif self.aggregation == 'norm':
-                mol_vec = mol_vec.sum(dim=0) / self.aggregation_norm
-            else:
-                raise Exception("Invalid aggregation")
-            mol_vecs.append(mol_vec)
 
-        molecule_hidden_state: torch.Tensor = torch.stack(mol_vecs, dim=0)
-        return molecule_hidden_state  # num_molecules x hidden_size
+        g.ndata['emb'] = atoms_hidden_states
+        graphs_list = dgl.unbatch(g=g)
+        mol_feat_tensor_list = []
+        for graph in graphs_list:
+            mol_feat_tensor_list.append(self._readout_per_g(graph))
+        
+        batch_mol_hidden_states = torch.cat(mol_feat_tensor_list, dim=0)
+        return batch_mol_hidden_states  # num_molecules x (node_out_feats + bond_dim)
+    
+    def _readout_per_g(self, g) -> torch.Tensor:
+        """
+        a reduce-sum across atoms per graph
+        
+        Parameters
+        ----------
+         g: DGLGraph
+            A DGLGraph for a batch of graphs. It stores the node features in
+            ``dgl_graph.ndata[self.nfeat_name]`` and edge features in
+            ``dgl_graph.edata[self.efeat_name]``.
+
+        Returns
+        -------
+        molecule_hidden_state: torch.Tensor
+            Tensor containing molecule encodings.
+        """
+        def message_func(edges):
+            src_msg = torch.cat((edges.src['emb'], edges.data['edge_attr']), dim=1)
+            return {'src_msg': src_msg}
+        
+        def reduce_func(nodes):
+            src_msg_sum = torch.sum(nodes.mailbox['src_msg'], dim=1)
+            return {'src_msg_sum': src_msg_sum}
+
+        g.send_and_recv(g.edges(), message_func=message_func, reduce_func=reduce_func)
+        molecule_hidden_state: torch.Tensor = torch.sum(g.ndata['src_msg_sum'], dim=0)
+        return molecule_hidden_state  # (node_out_feats + bond_dim)
 
     def forward(self, g):
         """Predict graph labels
@@ -222,7 +244,6 @@ class CustomMPNN(nn.Module):
         """
         node_feats = g.ndata[self.nfeat_name]
         edge_feats = g.edata[self.efeat_name]
-        molecules_unbatch_key = g._batch_num_nodes['_N'].tolist()
         
         node_encodings = self.mpnn(g, node_feats, edge_feats)
         for p in self.mpnn.named_parameters():
@@ -230,7 +251,7 @@ class CustomMPNN(nn.Module):
                 print(p[0])
         if torch.isnan(node_encodings).any():
             raise Exception("contains NaN!")
-        molecular_encodings = self._readout(node_encodings, molecules_unbatch_key)
+        molecular_encodings = self._readout(g, node_encodings)
         embeddings, out = self.ffn(molecular_encodings)
 
         if self.mode == 'classification':
@@ -407,10 +428,6 @@ class CustomMPNNModel(TorchModel):
         weights: list of torch.Tensor or None
             The weights for each sample or sample/task pair converted to torch.Tensor.
         """
-        try:
-            import dgl
-        except:
-            raise ImportError('This class requires dgl.')
 
         inputs, labels, weights = batch
         dgl_graphs = [

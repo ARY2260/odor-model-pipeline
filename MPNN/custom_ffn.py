@@ -96,13 +96,13 @@ class CustomPositionwiseFeedForward(nn.Module):
 
         if self.n_layers == 1:
             if self.dropout_at_input_no_act:
-                return self.linears[0](self.dropout_p[0](x))
+                return None, self.linears[0](self.dropout_p[0](x))
             else:
-                return self.dropout_p[0](self.activation(self.linears[0](x)))
+                return None, self.dropout_p[0](self.activation(self.linears[0](x)))
 
         else:
             if self.dropout_at_input_no_act:
-                x = self.dropout_p[0](x)
+                x = self.dropout_p[-1](x)
             for i in range(self.n_layers - 2):
                 x = self.dropout_p[i](self.activation(self.linears[i](x)))
 
