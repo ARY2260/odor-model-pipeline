@@ -27,8 +27,8 @@ def test_custom_mpnn_model_classification(nb_epoch):
     from featurizer import GraphConvConstants
 
     model = CustomMPNNModel(n_tasks = 138,
-                        batch_size=10,
-                        learning_rate=0.0005,
+                        batch_size=100,
+                        learning_rate=0.001,
                         class_imbalance_ratio = class_imbalance_ratio,
                         node_out_feats = 100,
                         edge_hidden_feats = 120,
@@ -37,14 +37,12 @@ def test_custom_mpnn_model_classification(nb_epoch):
                         number_atom_features = GraphConvConstants.ATOM_FDIM,
                         number_bond_features = GraphConvConstants.BOND_FDIM,
                         n_classes = 1,
-                        aggregation = 'sum',
-                        aggregation_norm = 0,
                         ffn_hidden_list= [64, 64],
                         ffn_embeddings = 256,
                         ffn_activation = 'relu',
                         ffn_dropout_p = 0.2,
                         ffn_dropout_at_input_no_act = True,
-                        weight_decay = 1e-4,
+                        weight_decay = 1e-5,
                         self_loop = False)
 
     # overfit test
@@ -53,7 +51,7 @@ def test_custom_mpnn_model_classification(nb_epoch):
     scores = model.evaluate(dataset, [metric], n_classes=2)
     print(scores['roc_auc_score'])
 #%%
-test_custom_mpnn_model_classification(20)
+test_custom_mpnn_model_classification(10)
 #%%
 for count, i in enumerate(range(10, 200, 20)):
     print(f"Iteration : {count+1}, epochs: {i}")
@@ -94,5 +92,5 @@ for count, i in enumerate(range(10, 200, 20)):
 #     reloaded_predict = reloaded_model.predict(dataset)
 #     assert np.all(orig_predict == reloaded_predict)
 
-+
+
 # %%

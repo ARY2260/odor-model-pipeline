@@ -35,9 +35,15 @@ class CustomMultiLabelLoss(Loss):
 
             if len(labels.shape) == len(output.shape):
                 labels = labels.squeeze(-1)
-            
-            ce_loss = ce_loss_fn(output, labels.long())
-            loss_out_size = len(ce_loss)
+
+            # handle multilabel
+            # output shape => (batch_size, classes=1, tasks)
+            # binary_output shape => (batch_size, classes=2, tasks) where now we have (1 - probabilities) for ce loss calculation
+            probabilities = output[:, 0, :]
+            complement_probabilities = 1 - probabilities
+            binary_output = torch.stack([probabilities, complement_probabilities], axis=1)
+
+            ce_loss = ce_loss_fn(binary_output, labels.long())
             
             if self.class_imbalance_ratio is None:
                 total_loss = ce_loss.sum()
@@ -45,9 +51,11 @@ class CustomMultiLabelLoss(Loss):
                 if len(self.class_imbalance_ratio) != ce_loss.shape[1]:
                     raise Exception("size of class_imbalance_ratio should be equal to n_tasks")
                 balancing_factors = torch.log(1 + self.class_imbalance_ratio)
-                balanced_losses = torch.mul(ce_loss, balancing_factors)
-                total_loss = balanced_losses.sum(axis=0)
+                balanced_losses = torch.mul(ce_loss, balancing_factors) # loss being weighted by a factor of log(1+ class_imbalance_ratio)
+                total_loss = balanced_losses.sum(axis=1) # sum balanced loss across all tasks; shape => (batch_size)
             
-            return total_loss
+            # duplicate loss across all tasks in a batch; shape => (batch_size, n_tasks)
+            # This is for API consistency
+            return total_loss.unsqueeze(-1).repeat(1,output.shape[-1])
 
         return loss

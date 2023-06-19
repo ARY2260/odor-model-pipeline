@@ -76,8 +76,6 @@ class CustomMPNN(nn.Module):
                  n_classes: int = 2,
                  nfeat_name: str = 'x',
                  efeat_name: str = 'edge_attr',
-                 aggregation: str = 'sum',
-                 aggregation_norm = 100,
                  ffn_hidden_list = [300],
                  ffn_embeddings: int = 300,
                  ffn_activation: str = 'relu',
@@ -134,8 +132,6 @@ class CustomMPNN(nn.Module):
         self.nfeat_name = nfeat_name
         self.efeat_name = efeat_name
         self.ffn_embeddings = ffn_embeddings
-        self.aggregation = aggregation
-        self.aggregation_norm = aggregation_norm
         self.ffn_activation = ffn_activation
         self.ffn_dropout_p = ffn_dropout_p
         if mode == 'classification':
@@ -315,8 +311,6 @@ class CustomMPNNModel(TorchModel):
                  number_atom_features: int = 30,
                  number_bond_features: int = 11,
                  n_classes: int = 2,
-                 aggregation: str = 'sum',
-                 aggregation_norm = 100,
                  ffn_hidden_list = [300],
                  ffn_embeddings: int = 300,
                  ffn_activation: str = 'relu',
@@ -371,8 +365,6 @@ class CustomMPNNModel(TorchModel):
                      number_atom_features=number_atom_features,
                      number_bond_features=number_bond_features,
                      n_classes=n_classes,
-                     aggregation = aggregation,
-                     aggregation_norm = aggregation_norm,
                      ffn_hidden_list=ffn_hidden_list,
                      ffn_embeddings=ffn_embeddings,
                      ffn_activation=ffn_activation,
