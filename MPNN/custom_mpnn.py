@@ -186,8 +186,8 @@ class CustomMPNN(nn.Module):
         for graph in graphs_list:
             mol_feat_tensor_list.append(self._readout_per_g(graph))
         
-        batch_mol_hidden_states = torch.cat(mol_feat_tensor_list, dim=0)
-        return batch_mol_hidden_states  # num_molecules x (node_out_feats + bond_dim)
+        batch_mol_hidden_states = torch.stack(mol_feat_tensor_list, dim=0)
+        return batch_mol_hidden_states  # batch_size x (node_out_feats + bond_dim)
     
     def _readout_per_g(self, g) -> torch.Tensor:
         """
