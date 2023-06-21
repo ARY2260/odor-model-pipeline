@@ -41,7 +41,7 @@ class CustomMultiLabelLoss(Loss):
             # binary_output shape => (batch_size, classes=2, tasks) where now we have (1 - probabilities) for ce loss calculation
             probabilities = output[:, 0, :]
             complement_probabilities = 1 - probabilities
-            binary_output = torch.stack([probabilities, complement_probabilities], axis=1)
+            binary_output = torch.stack([complement_probabilities, probabilities], axis=1)
 
             ce_loss = ce_loss_fn(binary_output, labels.long())
             
@@ -57,5 +57,6 @@ class CustomMultiLabelLoss(Loss):
             # duplicate loss across all tasks in a batch; shape => (batch_size, n_tasks)
             # This is for API consistency
             return total_loss.unsqueeze(-1).repeat(1,output.shape[-1])
+            # return balanced_losses
 
         return loss
