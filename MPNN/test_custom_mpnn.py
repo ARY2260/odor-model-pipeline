@@ -19,15 +19,15 @@ def test_custom_mpnn_model_classification(nb_epoch):
     torch.manual_seed(0)
 
     # load sample dataset
-    # dataset, class_imbalance_ratio = get_dataset(csv_path='assets/GS_LF_sample100.csv')
-    dataset, class_imbalance_ratio = get_dataset(csv_path='./../curated_GS_LF_merged_4984.csv')
+    dataset, class_imbalance_ratio = get_dataset(csv_path='assets/GS_LF_sample100.csv')
+    # dataset, class_imbalance_ratio = get_dataset(csv_path='./../curated_GS_LF_merged_4984.csv')
 
     # initialize the model
     from custom_mpnn import CustomMPNNModel
     from featurizer import GraphConvConstants
 
-    model = CustomMPNNModel(n_tasks = 138,
-                        batch_size=100,
+    model = CustomMPNNModel(n_tasks = 6,
+                        batch_size=10,
                         learning_rate=0.001,
                         class_imbalance_ratio = class_imbalance_ratio,
                         node_out_feats = 100,
@@ -47,11 +47,11 @@ def test_custom_mpnn_model_classification(nb_epoch):
 
     # overfit test
     model.fit(dataset, nb_epoch=nb_epoch)
-    metric = dc.metrics.Metric(dc.metrics.roc_auc_score)
+    metric = dc.metrics.Metric(dc.metrics.roc_auc_score, threshold_value=0.5, classification_handling_mode='threshold')
     scores = model.evaluate(dataset, [metric], n_classes=2)
     print(scores['roc_auc_score'])
 #%%
-test_custom_mpnn_model_classification(10)
+test_custom_mpnn_model_classification(50)
 #%%
 for count, i in enumerate(range(10, 200, 20)):
     print(f"Iteration : {count+1}, epochs: {i}")
