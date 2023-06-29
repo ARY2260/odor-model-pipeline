@@ -1,4 +1,25 @@
 import torch
+from deepchem.models.optimizers import Adam, AdaGrad, AdamW, SparseAdam, RMSProp, GradientDescent, KFAC
+#%%
+def get_optimizer(optimizer_name):
+  if optimizer_name == 'adam':
+    return Adam()
+  elif optimizer_name == 'adagrad':
+    return AdaGrad()
+  elif optimizer_name == 'adamw':
+    return AdamW()
+  elif optimizer_name == 'sparseadam':
+    return SparseAdam()
+  elif optimizer_name == 'rmsprop':
+    return RMSProp()
+  elif optimizer_name == 'sgd':
+    return GradientDescent()
+  elif optimizer_name == 'kfac':
+    return KFAC()
+  else:
+    print("INVALID OPTIMISER NAME!, using ADAM optimizer by default")
+    return Adam()
+#%%
 
 class EarlyStopper():
 

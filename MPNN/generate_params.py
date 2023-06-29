@@ -1,65 +1,35 @@
+#%%
 import numpy as np
+import json
 import os
-import tempfile
-import collections
-import logging
 import itertools
-from typing import Dict, List, Optional, Tuple, Any, Callable
-
-from deepchem.data import Dataset
-from deepchem.trans import Transformer
-from deepchem.models import Model
-from deepchem.metrics import Metric
-from deepchem.hyper.base_classes import HyperparamOpt
-from deepchem.hyper.base_classes import _convert_hyperparam_dict_to_filename
-
-logger = logging.getLogger(__name__)
+from typing import Dict, List, Any
 
 
-n_trials = 500
+N_TRIALS = 30
 
-params_dict = {"batch_size": [],
-                # "n_tasks": ,
-                "class_imbalance_ratio": ,
-                "node_out_feats": ,
-                "edge_hidden_feats": ,
-                "num_step_message_passing": ,
-                # "mode": 'classification',
-                "number_atom_features": ,
-                "number_bond_features": ,
-                # "n_classes": ,
-                "ffn_hidden_list": [[]],
-                # "ffn_embeddings": ,
-                "ffn_activation": 'relu',
-                "ffn_dropout_p": 0.0,
-                "ffn_dropout_at_input_no_act": True,
-                "weight_decay": ,
-                "self_loop": ,
-                "learning_rate":
-                }
+PARAMS_DICT = {'batch_size': [8, 32, 128, 256],
+               'node_out_feats': [50, 250, 500],
+               'edge_hidden_feats': [50, 250, 500],
+               'num_step_message_passing': [1, 2, 3],
+               'ffn_hidden_list': [[64],
+                                   [512],
+                                   [1024],
+                                   [64, 64],
+                                   [512, 512],
+                                   [1024, 1024],
+                                   [512, 512, 512]],
+               'ffn_activation': ['relu', 'leakyrelu'],
+               'ffn_dropout_p': [0.1, 0.4, 0.75],
+               'weight_decay': [0.0001, 1e-05, 1e-06],
+               'learning_rate': [0.1, 0.01, 0.001],
+               'optimizer_name': ['adam', 'rmsprop']}
+
 
 def generate_random_hyperparam_values(params_dict: Dict,
                                           n: int) -> List[Dict[str, Any]]:
     """Generates `n` random hyperparameter combinations of hyperparameter values
     Parameters
-    ----------
-    params_dict: Dict
-        A dictionary of hyperparameters where parameter which takes discrete
-        values are specified as iterables and continuous parameters are of
-        type callables.
-    n: int
-        Number of hyperparameter combinations to generate
-    Returns
-    -------
-    A list of generated hyperparameters
-    Example
-    -------
-    >>> from scipy.stats import uniform
-    >>> from deepchem.hyper import RandomHyperparamOpt
-    >>> n = 1
-    >>> params_dict = {'a': [1, 2, 3], 'b': [5, 7, 8], 'c': uniform(10, 5).rvs}
-    >>> RandomHyperparamOpt.generate_random_hyperparam_values(params_dict, n)  # doctest: +SKIP
-    [{'a': 3, 'b': 7, 'c': 10.619700740985433}]
     """
     hyperparam_keys, hyperparam_values = [], []
     for key, values in params_dict.items():
@@ -82,6 +52,25 @@ def generate_random_hyperparam_values(params_dict: Dict,
         params_subset.append(param)
     return params_subset
 
-hyperparameter_combs = generate_random_hyperparam_values(params_dict=params_dict, n=n_trials)
 
-_convert_hyperparam_dict_to_filename()
+def generate_hyperparams(params_dict=PARAMS_DICT, n_trials=N_TRIALS, dir=None):
+    """
+    Generate hyperparams for random trials
+    """
+    hyperparameter_combs = generate_random_hyperparam_values(params_dict=params_dict, n=n_trials)
+
+    trials_dict = {}
+    for count, params in enumerate(hyperparameter_combs):
+        trials_dict[f'trial_{count+1}'] = params
+
+    file_name = f"{n_trials}_trials_params.json"
+    if dir is None:
+        cwd = os.getcwd()
+        file_path = os.path.join(cwd, file_name)
+    else:
+        file_path = os.path.join(dir, file_name)
+
+    with open(file_path, "w") as json_file:
+        json.dump(trials_dict, json_file, indent=4)
+    
+    return trials_dict, file_path

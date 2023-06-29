@@ -7,9 +7,11 @@ import torch.nn.functional as F
 
 from deepchem.models.losses import Loss, L2Loss
 from deepchem.models.torch_models.torch_model import TorchModel
+from deepchem.models.optimizers import Optimizer, Adam
 from custom_ffn import CustomPositionwiseFeedForward
 
 from utils.loss_func import CustomMultiLabelLoss
+from utils.train_utils import get_optimizer
 
 try:
     import dgl
@@ -318,6 +320,8 @@ class CustomMPNNModel(TorchModel):
                  ffn_dropout_at_input_no_act: bool = True,
                  weight_decay: float = 0.0,
                  self_loop: bool = False,
+                 optimizer_name = 'adam',
+                 learning_rate: float = 0.001,
                  **kwargs):
         """
         Parameters
@@ -380,9 +384,17 @@ class CustomMPNNModel(TorchModel):
 
         self.weight_decay = weight_decay
 
+        optimizer = get_optimizer(optimizer_name)
+        if isinstance(optimizer, Optimizer):
+            optimizer.learning_rate = learning_rate
+        else:
+            optimizer = None
+        
         super(CustomMPNNModel, self).__init__(model,
                                         loss=loss,
                                         output_types=output_types,
+                                        optimizer=optimizer,
+                                        learning_rate=learning_rate,
                                         **kwargs)
 
         self._self_loop = self_loop

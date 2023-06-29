@@ -51,7 +51,7 @@ def test_custom_mpnn_model_classification(nb_epoch):
     scores = model.evaluate(dataset, [metric], n_classes=2)
     print(scores['roc_auc_score'])
 #%%
-test_custom_mpnn_model_classification(50)
+test_custom_mpnn_model_classification(1)
 #%%
 for count, i in enumerate(range(10, 200, 20)):
     print(f"Iteration : {count+1}, epochs: {i}")

@@ -1,0 +1,450 @@
+{
+    "trial_1": {
+        "batch_size": 256,
+        "node_out_feats": 50,
+        "edge_hidden_feats": 500,
+        "num_step_message_passing": 3,
+        "ffn_hidden_list": [
+            1024
+        ],
+        "ffn_activation": "leakyrelu",
+        "ffn_dropout_p": 0.75,
+        "weight_decay": 1e-06,
+        "learning_rate": 0.001,
+        "optimizer_name": "rmsprop"
+    },
+    "trial_2": {
+        "batch_size": 8,
+        "node_out_feats": 250,
+        "edge_hidden_feats": 500,
+        "num_step_message_passing": 3,
+        "ffn_hidden_list": [
+            64
+        ],
+        "ffn_activation": "leakyrelu",
+        "ffn_dropout_p": 0.4,
+        "weight_decay": 1e-05,
+        "learning_rate": 0.1,
+        "optimizer_name": "adam"
+    },
+    "trial_3": {
+        "batch_size": 8,
+        "node_out_feats": 50,
+        "edge_hidden_feats": 50,
+        "num_step_message_passing": 3,
+        "ffn_hidden_list": [
+            64,
+            64
+        ],
+        "ffn_activation": "leakyrelu",
+        "ffn_dropout_p": 0.4,
+        "weight_decay": 0.0001,
+        "learning_rate": 0.01,
+        "optimizer_name": "adam"
+    },
+    "trial_4": {
+        "batch_size": 256,
+        "node_out_feats": 50,
+        "edge_hidden_feats": 250,
+        "num_step_message_passing": 3,
+        "ffn_hidden_list": [
+            512,
+            512,
+            512
+        ],
+        "ffn_activation": "relu",
+        "ffn_dropout_p": 0.75,
+        "weight_decay": 0.0001,
+        "learning_rate": 0.1,
+        "optimizer_name": "adam"
+    },
+    "trial_5": {
+        "batch_size": 128,
+        "node_out_feats": 500,
+        "edge_hidden_feats": 250,
+        "num_step_message_passing": 1,
+        "ffn_hidden_list": [
+            512
+        ],
+        "ffn_activation": "relu",
+        "ffn_dropout_p": 0.4,
+        "weight_decay": 0.0001,
+        "learning_rate": 0.1,
+        "optimizer_name": "adam"
+    },
+    "trial_6": {
+        "batch_size": 8,
+        "node_out_feats": 250,
+        "edge_hidden_feats": 50,
+        "num_step_message_passing": 3,
+        "ffn_hidden_list": [
+            512,
+            512,
+            512
+        ],
+        "ffn_activation": "relu",
+        "ffn_dropout_p": 0.4,
+        "weight_decay": 1e-06,
+        "learning_rate": 0.001,
+        "optimizer_name": "adam"
+    },
+    "trial_7": {
+        "batch_size": 128,
+        "node_out_feats": 50,
+        "edge_hidden_feats": 250,
+        "num_step_message_passing": 1,
+        "ffn_hidden_list": [
+            512
+        ],
+        "ffn_activation": "relu",
+        "ffn_dropout_p": 0.75,
+        "weight_decay": 1e-05,
+        "learning_rate": 0.01,
+        "optimizer_name": "adam"
+    },
+    "trial_8": {
+        "batch_size": 128,
+        "node_out_feats": 250,
+        "edge_hidden_feats": 250,
+        "num_step_message_passing": 2,
+        "ffn_hidden_list": [
+            512
+        ],
+        "ffn_activation": "leakyrelu",
+        "ffn_dropout_p": 0.4,
+        "weight_decay": 1e-06,
+        "learning_rate": 0.01,
+        "optimizer_name": "rmsprop"
+    },
+    "trial_9": {
+        "batch_size": 32,
+        "node_out_feats": 250,
+        "edge_hidden_feats": 250,
+        "num_step_message_passing": 1,
+        "ffn_hidden_list": [
+            512,
+            512
+        ],
+        "ffn_activation": "leakyrelu",
+        "ffn_dropout_p": 0.1,
+        "weight_decay": 1e-05,
+        "learning_rate": 0.001,
+        "optimizer_name": "rmsprop"
+    },
+    "trial_10": {
+        "batch_size": 8,
+        "node_out_feats": 250,
+        "edge_hidden_feats": 250,
+        "num_step_message_passing": 2,
+        "ffn_hidden_list": [
+            64
+        ],
+        "ffn_activation": "relu",
+        "ffn_dropout_p": 0.4,
+        "weight_decay": 1e-06,
+        "learning_rate": 0.01,
+        "optimizer_name": "rmsprop"
+    },
+    "trial_11": {
+        "batch_size": 8,
+        "node_out_feats": 50,
+        "edge_hidden_feats": 250,
+        "num_step_message_passing": 3,
+        "ffn_hidden_list": [
+            512,
+            512
+        ],
+        "ffn_activation": "leakyrelu",
+        "ffn_dropout_p": 0.75,
+        "weight_decay": 1e-06,
+        "learning_rate": 0.1,
+        "optimizer_name": "rmsprop"
+    },
+    "trial_12": {
+        "batch_size": 256,
+        "node_out_feats": 250,
+        "edge_hidden_feats": 500,
+        "num_step_message_passing": 3,
+        "ffn_hidden_list": [
+            512,
+            512,
+            512
+        ],
+        "ffn_activation": "leakyrelu",
+        "ffn_dropout_p": 0.75,
+        "weight_decay": 0.0001,
+        "learning_rate": 0.1,
+        "optimizer_name": "rmsprop"
+    },
+    "trial_13": {
+        "batch_size": 256,
+        "node_out_feats": 500,
+        "edge_hidden_feats": 500,
+        "num_step_message_passing": 2,
+        "ffn_hidden_list": [
+            1024,
+            1024
+        ],
+        "ffn_activation": "relu",
+        "ffn_dropout_p": 0.75,
+        "weight_decay": 0.0001,
+        "learning_rate": 0.01,
+        "optimizer_name": "adam"
+    },
+    "trial_14": {
+        "batch_size": 256,
+        "node_out_feats": 50,
+        "edge_hidden_feats": 50,
+        "num_step_message_passing": 2,
+        "ffn_hidden_list": [
+            512,
+            512,
+            512
+        ],
+        "ffn_activation": "leakyrelu",
+        "ffn_dropout_p": 0.1,
+        "weight_decay": 1e-05,
+        "learning_rate": 0.001,
+        "optimizer_name": "rmsprop"
+    },
+    "trial_15": {
+        "batch_size": 128,
+        "node_out_feats": 250,
+        "edge_hidden_feats": 500,
+        "num_step_message_passing": 1,
+        "ffn_hidden_list": [
+            64,
+            64
+        ],
+        "ffn_activation": "leakyrelu",
+        "ffn_dropout_p": 0.75,
+        "weight_decay": 0.0001,
+        "learning_rate": 0.001,
+        "optimizer_name": "rmsprop"
+    },
+    "trial_16": {
+        "batch_size": 8,
+        "node_out_feats": 500,
+        "edge_hidden_feats": 50,
+        "num_step_message_passing": 1,
+        "ffn_hidden_list": [
+            512,
+            512,
+            512
+        ],
+        "ffn_activation": "leakyrelu",
+        "ffn_dropout_p": 0.1,
+        "weight_decay": 1e-05,
+        "learning_rate": 0.001,
+        "optimizer_name": "adam"
+    },
+    "trial_17": {
+        "batch_size": 256,
+        "node_out_feats": 500,
+        "edge_hidden_feats": 250,
+        "num_step_message_passing": 2,
+        "ffn_hidden_list": [
+            512,
+            512,
+            512
+        ],
+        "ffn_activation": "leakyrelu",
+        "ffn_dropout_p": 0.75,
+        "weight_decay": 1e-06,
+        "learning_rate": 0.1,
+        "optimizer_name": "rmsprop"
+    },
+    "trial_18": {
+        "batch_size": 8,
+        "node_out_feats": 500,
+        "edge_hidden_feats": 250,
+        "num_step_message_passing": 2,
+        "ffn_hidden_list": [
+            64,
+            64
+        ],
+        "ffn_activation": "leakyrelu",
+        "ffn_dropout_p": 0.1,
+        "weight_decay": 1e-06,
+        "learning_rate": 0.1,
+        "optimizer_name": "rmsprop"
+    },
+    "trial_19": {
+        "batch_size": 256,
+        "node_out_feats": 50,
+        "edge_hidden_feats": 500,
+        "num_step_message_passing": 3,
+        "ffn_hidden_list": [
+            512,
+            512,
+            512
+        ],
+        "ffn_activation": "relu",
+        "ffn_dropout_p": 0.4,
+        "weight_decay": 0.0001,
+        "learning_rate": 0.01,
+        "optimizer_name": "rmsprop"
+    },
+    "trial_20": {
+        "batch_size": 32,
+        "node_out_feats": 50,
+        "edge_hidden_feats": 250,
+        "num_step_message_passing": 3,
+        "ffn_hidden_list": [
+            1024,
+            1024
+        ],
+        "ffn_activation": "relu",
+        "ffn_dropout_p": 0.75,
+        "weight_decay": 0.0001,
+        "learning_rate": 0.1,
+        "optimizer_name": "rmsprop"
+    },
+    "trial_21": {
+        "batch_size": 32,
+        "node_out_feats": 50,
+        "edge_hidden_feats": 250,
+        "num_step_message_passing": 1,
+        "ffn_hidden_list": [
+            1024
+        ],
+        "ffn_activation": "leakyrelu",
+        "ffn_dropout_p": 0.4,
+        "weight_decay": 0.0001,
+        "learning_rate": 0.1,
+        "optimizer_name": "rmsprop"
+    },
+    "trial_22": {
+        "batch_size": 32,
+        "node_out_feats": 250,
+        "edge_hidden_feats": 50,
+        "num_step_message_passing": 3,
+        "ffn_hidden_list": [
+            512,
+            512
+        ],
+        "ffn_activation": "leakyrelu",
+        "ffn_dropout_p": 0.4,
+        "weight_decay": 0.0001,
+        "learning_rate": 0.001,
+        "optimizer_name": "rmsprop"
+    },
+    "trial_23": {
+        "batch_size": 8,
+        "node_out_feats": 50,
+        "edge_hidden_feats": 500,
+        "num_step_message_passing": 1,
+        "ffn_hidden_list": [
+            512
+        ],
+        "ffn_activation": "leakyrelu",
+        "ffn_dropout_p": 0.1,
+        "weight_decay": 1e-06,
+        "learning_rate": 0.1,
+        "optimizer_name": "adam"
+    },
+    "trial_24": {
+        "batch_size": 128,
+        "node_out_feats": 50,
+        "edge_hidden_feats": 50,
+        "num_step_message_passing": 1,
+        "ffn_hidden_list": [
+            512,
+            512
+        ],
+        "ffn_activation": "leakyrelu",
+        "ffn_dropout_p": 0.75,
+        "weight_decay": 1e-05,
+        "learning_rate": 0.01,
+        "optimizer_name": "adam"
+    },
+    "trial_25": {
+        "batch_size": 256,
+        "node_out_feats": 250,
+        "edge_hidden_feats": 250,
+        "num_step_message_passing": 3,
+        "ffn_hidden_list": [
+            512,
+            512,
+            512
+        ],
+        "ffn_activation": "leakyrelu",
+        "ffn_dropout_p": 0.1,
+        "weight_decay": 0.0001,
+        "learning_rate": 0.1,
+        "optimizer_name": "rmsprop"
+    },
+    "trial_26": {
+        "batch_size": 128,
+        "node_out_feats": 50,
+        "edge_hidden_feats": 500,
+        "num_step_message_passing": 3,
+        "ffn_hidden_list": [
+            64
+        ],
+        "ffn_activation": "relu",
+        "ffn_dropout_p": 0.4,
+        "weight_decay": 1e-06,
+        "learning_rate": 0.01,
+        "optimizer_name": "adam"
+    },
+    "trial_27": {
+        "batch_size": 8,
+        "node_out_feats": 250,
+        "edge_hidden_feats": 250,
+        "num_step_message_passing": 1,
+        "ffn_hidden_list": [
+            1024,
+            1024
+        ],
+        "ffn_activation": "leakyrelu",
+        "ffn_dropout_p": 0.1,
+        "weight_decay": 1e-05,
+        "learning_rate": 0.1,
+        "optimizer_name": "rmsprop"
+    },
+    "trial_28": {
+        "batch_size": 8,
+        "node_out_feats": 50,
+        "edge_hidden_feats": 50,
+        "num_step_message_passing": 1,
+        "ffn_hidden_list": [
+            512
+        ],
+        "ffn_activation": "leakyrelu",
+        "ffn_dropout_p": 0.75,
+        "weight_decay": 0.0001,
+        "learning_rate": 0.01,
+        "optimizer_name": "adam"
+    },
+    "trial_29": {
+        "batch_size": 256,
+        "node_out_feats": 50,
+        "edge_hidden_feats": 500,
+        "num_step_message_passing": 3,
+        "ffn_hidden_list": [
+            1024,
+            1024
+        ],
+        "ffn_activation": "leakyrelu",
+        "ffn_dropout_p": 0.1,
+        "weight_decay": 1e-06,
+        "learning_rate": 0.1,
+        "optimizer_name": "adam"
+    },
+    "trial_30": {
+        "batch_size": 32,
+        "node_out_feats": 50,
+        "edge_hidden_feats": 250,
+        "num_step_message_passing": 2,
+        "ffn_hidden_list": [
+            64,
+            64
+        ],
+        "ffn_activation": "leakyrelu",
+        "ffn_dropout_p": 0.1,
+        "weight_decay": 1e-06,
+        "learning_rate": 0.01,
+        "optimizer_name": "rmsprop"
+    }
+}
