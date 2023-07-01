@@ -39,6 +39,7 @@ class EarlyStopper():
 
   def __call__(self, model, current_score):
     from deepchem.models import TorchModel
+    
     if self.mode == 'higher' and current_score > self.best_score:
       self.best_score = current_score
       self.patience_count = 0
@@ -46,6 +47,7 @@ class EarlyStopper():
         torch.save(model.model.state_dict(), self.save_path + '/early_stop.pt')
       else:  # KerasModel
         model.model.save(self.save_path + '/early_stop')
+    
     elif self.mode == 'lower' and current_score < self.best_score:
       self.best_score = current_score
       self.patience_count = 0

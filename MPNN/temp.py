@@ -150,6 +150,10 @@ dataset, class_imbalance_ratio = get_dataset()
 randomstratifiedsplitter = dc.splits.RandomStratifiedSplitter()
 train_dataset, test_dataset = randomstratifiedsplitter.train_test_split(dataset, frac_train = 0.9, seed = 0)
 # %%
+folds_list = randomstratifiedsplitter.k_fold_split(dataset=dataset, k=3)
+#%%
+train_dataset, test_dataset = folds_list[0]
+#%%
 import pandas as pd
 
 print(train_dataset.y.shape)
