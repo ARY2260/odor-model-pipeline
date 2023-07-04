@@ -7,7 +7,7 @@ from typing import Dict, List, Any
 
 N_TRIALS = 30
 
-PARAMS_DICT = {'batch_size': [8, 32, 128, 256],
+PARAMS_DICT = {'batch_size': [8, 32, 128, 256, 512],
                'node_out_feats': [50, 250, 500],
                'edge_hidden_feats': [50, 250, 500],
                'num_step_message_passing': [1, 2, 3],
@@ -16,13 +16,12 @@ PARAMS_DICT = {'batch_size': [8, 32, 128, 256],
                                    [1024],
                                    [64, 64],
                                    [512, 512],
-                                   [1024, 1024],
-                                   [512, 512, 512]],
+                                   [1024, 1024]],
                'ffn_activation': ['relu', 'leakyrelu'],
                'ffn_dropout_p': [0.1, 0.4, 0.75],
                'weight_decay': [0.0001, 1e-05, 1e-06],
                'learning_rate': [0.1, 0.01, 0.001],
-               'optimizer_name': ['adam', 'rmsprop']}
+               'optimizer_name': ['adam']}
 
 
 def generate_random_hyperparam_values(params_dict: Dict,

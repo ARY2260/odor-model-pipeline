@@ -1,0 +1,45 @@
+{
+    "trial_1": {
+        "batch_size": 512,
+        "node_out_feats": 250,
+        "edge_hidden_feats": 500,
+        "num_step_message_passing": 2,
+        "ffn_hidden_list": [
+            64
+        ],
+        "ffn_activation": "relu",
+        "ffn_dropout_p": 0.1,
+        "weight_decay": 0.0001,
+        "learning_rate": 0.1,
+        "optimizer_name": "adam"
+    },
+    "trial_2": {
+        "batch_size": 256,
+        "node_out_feats": 500,
+        "edge_hidden_feats": 50,
+        "num_step_message_passing": 2,
+        "ffn_hidden_list": [
+            1024
+        ],
+        "ffn_activation": "leakyrelu",
+        "ffn_dropout_p": 0.4,
+        "weight_decay": 1e-06,
+        "learning_rate": 0.001,
+        "optimizer_name": "adam"
+    },
+    "trial_3": {
+        "batch_size": 8,
+        "node_out_feats": 500,
+        "edge_hidden_feats": 250,
+        "num_step_message_passing": 3,
+        "ffn_hidden_list": [
+            64,
+            64
+        ],
+        "ffn_activation": "relu",
+        "ffn_dropout_p": 0.75,
+        "weight_decay": 1e-05,
+        "learning_rate": 0.001,
+        "optimizer_name": "adam"
+    }
+}

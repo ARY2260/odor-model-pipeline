@@ -259,3 +259,16 @@ ratio_analysis(test_ratios_is, class_imbalance_ratio)
 # %%
 ratio_analysis(test_ratios_is, train_ratios_is)
 # %%
+import logging
+
+logger = logging.getLogger()
+logging.basicConfig(level=logging.INFO)
+
+logger.info("Info")
+logger.error("error")
+logger.info("info")
+print('done')
+# %%
+import torch
+torch.device('cuda:0')
+# %%
