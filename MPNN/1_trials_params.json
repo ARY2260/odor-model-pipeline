@@ -1,0 +1,16 @@
+{
+    "trial_1": {
+        "batch_size": 64,
+        "node_out_feats": 50,
+        "edge_hidden_feats": 50,
+        "num_step_message_passing": 1,
+        "ffn_hidden_list": [
+            64
+        ],
+        "ffn_activation": "leakyrelu",
+        "ffn_dropout_p": 0.1,
+        "weight_decay": 1e-05,
+        "learning_rate": 0.01,
+        "optimizer_name": "adam"
+    }
+}

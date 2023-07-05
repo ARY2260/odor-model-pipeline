@@ -1,4 +1,3 @@
-#%%
 from deepchem.data.data_loader import CSVLoader
 from featurizer import CustomFeaturizer
 import pandas as pd
@@ -7,7 +6,7 @@ def get_class_imbalance_ratio(df):
     class_counts = df.sum().to_numpy()
     total = class_counts.sum()
     class_imbalance_ratio = class_counts/total
-    return class_imbalance_ratio
+    return class_imbalance_ratio.tolist()
     
 
 def get_dataset(csv_path='./../curated_GS_LF_merged_4984.csv'):
@@ -25,5 +24,3 @@ def get_dataset(csv_path='./../curated_GS_LF_merged_4984.csv'):
 
     class_imbalance_ratio = get_class_imbalance_ratio(curated_df.drop(columns=['nonStereoSMILES', 'descriptors']))
     return dataset, class_imbalance_ratio
-
-# %%

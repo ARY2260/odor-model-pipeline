@@ -90,9 +90,9 @@ class CV:
                     # model_ckpt_list.append(ckpt_save_path)
                 #   metric = dc.metrics.Metric(dc.metrics.roc_auc_score, threshold_value=0.5, classification_handling_mode='threshold')
                     train_score = model.evaluate(
-                        train_dataset, [metric], n_classes=2)
+                        train_dataset, [metric], n_classes=2)['roc_auc_score']
                     val_score = model.evaluate(
-                        valid_dataset, [metric], n_classes=2)
+                        valid_dataset, [metric], n_classes=2)['roc_auc_score']
                     if val_score > best_val_score:
                         best_val_score = val_score
                         best_train_score = train_score

@@ -85,7 +85,8 @@ def multi_gpu_random_search_cv(dataset=None, n_folds=5, n_trials=30, max_epoch=5
     best_validation_score = 0
     best_hyperparams = {}
 
-    for scores in all_scores:
+    for jobs in all_scores:
+        scores = list(jobs.values())[0]
         params = scores['params']
         mean_train_score = scores['mean_train_score']
         mean_val_score = scores['mean_val_score']
