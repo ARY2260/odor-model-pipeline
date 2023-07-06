@@ -32,6 +32,7 @@ def test_custom_mpnn_model_classification(nb_epoch):
                         class_imbalance_ratio = class_imbalance_ratio,
                         node_out_feats = 10,
                         edge_hidden_feats = 12,
+                        edge_out_feats = 10,
                         num_step_message_passing = 2,
                         mode = 'classification',
                         number_atom_features = GraphConvConstants.ATOM_FDIM,

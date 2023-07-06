@@ -72,6 +72,7 @@ class CustomMPNN(nn.Module):
                  n_tasks: int,
                  node_out_feats: int = 64,
                  edge_hidden_feats: int = 128,
+                 edge_out_feats: int = 64,
                  num_step_message_passing: int = 3,
                  mode: str = 'regression',
                  number_atom_features: int = 30,
@@ -147,12 +148,17 @@ class CustomMPNN(nn.Module):
                            edge_in_feats=number_bond_features,
                            edge_hidden_feats=edge_hidden_feats,
                            num_step_message_passing=num_step_message_passing)
+
+        self.project_edge_feats = nn.Sequential(
+            nn.Linear(number_bond_features, edge_out_feats),
+            nn.ReLU()
+        )
         
         if ffn_embeddings is not None:
             ffn_hidden_list.append(ffn_embeddings)
 
         self.ffn: nn.Module = CustomPositionwiseFeedForward(
-            d_input=node_out_feats + number_bond_features,
+            d_input=node_out_feats + edge_out_feats,
             d_hidden_list=ffn_hidden_list,
             d_output=self.ffn_output,
             activation=ffn_activation,
@@ -216,7 +222,7 @@ class CustomMPNN(nn.Module):
         molecule_hidden_state: torch.Tensor = torch.sum(g.ndata['src_msg_sum'], dim=0)
         return molecule_hidden_state  # (node_out_feats + bond_dim)
 
-    def _readout_new(self, g, atoms_hidden_states: torch.Tensor) -> torch.Tensor:
+    def _readout_new(self, g, atoms_hidden_states: torch.Tensor, edge_feats: torch.Tensor) -> torch.Tensor:
         """
         Method to execute the readout phase. (compute molecules encodings from atom hidden states)
 
@@ -230,21 +236,18 @@ class CustomMPNN(nn.Module):
         atoms_hidden_states: torch.Tensor
             Tensor containing atom hidden states.
 
+        edge_feats: torch.Tensor
+
         Returns
         -------
         molecule_hidden_state: torch.Tensor
             Tensor containing molecule encodings.
         """
 
-        g.ndata['emb'] = atoms_hidden_states
-        # graphs_list = dgl.unbatch(g=g)
-        # mol_feat_tensor_list = []
-        # for graph in graphs_list:
-        #     mol_feat_tensor_list.append(self._readout_per_g_new(graph))
-        
-        # batch_mol_hidden_states = torch.stack(mol_feat_tensor_list, dim=0)
+        g.ndata['node_emb'] = atoms_hidden_states
+        g.edata['edge_emb'] = self.project_edge_feats(edge_feats)
         batch_mol_hidden_states = self._readout_per_g_new(g=g)
-        return batch_mol_hidden_states  # batch_size x (node_out_feats + bond_dim)
+        return batch_mol_hidden_states  # batch_size x (node_out_feats + edge_out_feats)
     
     def _readout_per_g_new(self, g) -> torch.Tensor:
         """
@@ -263,7 +266,7 @@ class CustomMPNN(nn.Module):
             Tensor containing molecule encodings.
         """
         def message_func(edges):
-            src_msg = torch.cat((edges.src['emb'], edges.data['edge_attr']), dim=1)
+            src_msg = torch.cat((edges.src['node_emb'], edges.data['edge_emb']), dim=1)
             return {'src_msg': src_msg}
         
         def reduce_func(nodes):
@@ -319,7 +322,7 @@ class CustomMPNN(nn.Module):
         # print("checkpoint_1_2_diff: ", checkpoint_1_2_diff)
         
         # molecular_encodings = self._readout(g, node_encodings)
-        molecular_encodings = self._readout_new(g, node_encodings)
+        molecular_encodings = self._readout_new(g, node_encodings, edge_feats)
 
         
         # checkpoint_3 = dt.datetime.now()
@@ -388,6 +391,7 @@ class CustomMPNNModel(TorchModel):
                  class_imbalance_ratio = None,
                  node_out_feats: int = 64,
                  edge_hidden_feats: int = 128,
+                 edge_out_feats: int = 64,
                  num_step_message_passing: int = 3,
                  mode: str = 'regression',
                  number_atom_features: int = 30,
@@ -444,6 +448,7 @@ class CustomMPNNModel(TorchModel):
         model = CustomMPNN(n_tasks=n_tasks,
                      node_out_feats=node_out_feats,
                      edge_hidden_feats=edge_hidden_feats,
+                     edge_out_feats = edge_out_feats,
                      num_step_message_passing=num_step_message_passing,
                      mode=mode,
                      number_atom_features=number_atom_features,
