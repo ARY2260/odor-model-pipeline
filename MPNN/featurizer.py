@@ -209,6 +209,7 @@ class CustomFeaturizer(MolecularFeaturizer):
 
 # # %%
 # import torch
+# import dgl
 # featurizer = CustomFeaturizer()
 # graph = featurizer.featurize('O=C=O')[0]
 # g = graph.to_dgl_graph(self_loop = False)
@@ -217,6 +218,7 @@ class CustomFeaturizer(MolecularFeaturizer):
 # g.edata['edge_attr'] = bond_ft
 # embeddings = torch.Tensor([[1.,2.], [1., 2.], [9., 11.]])
 # g.ndata['emb'] = embeddings
+# #%%
 # def message_func(edges):
 #     src_msg = torch.cat((edges.src['emb'], edges.data['edge_attr']), dim=1)
 #     return {'src_msg': src_msg}
@@ -225,7 +227,8 @@ class CustomFeaturizer(MolecularFeaturizer):
 #     src_msg_sum = torch.sum(nodes.mailbox['src_msg'], dim=1)
 #     return {'src_msg_sum': src_msg_sum}
 # g.send_and_recv(g.edges(), message_func=message_func, reduce_func=reduce_func)
-# molecule_hidden_state: torch.Tensor = torch.sum(g.ndata['src_msg_sum'], dim=0)
+# molecule_hidden_state = dgl.sum_nodes(g, 'src_msg_sum')
+# # molecule_hidden_state: torch.Tensor = torch.sum(g.ndata['src_msg_sum'], dim=0)
 # # tensor([ 20.,  26., 100.]) required
 
 # # %%

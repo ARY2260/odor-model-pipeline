@@ -1,6 +1,7 @@
 """
 DGL-based MPNN for graph property prediction.
 """
+import datetime as dt
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -215,6 +216,66 @@ class CustomMPNN(nn.Module):
         molecule_hidden_state: torch.Tensor = torch.sum(g.ndata['src_msg_sum'], dim=0)
         return molecule_hidden_state  # (node_out_feats + bond_dim)
 
+    def _readout_new(self, g, atoms_hidden_states: torch.Tensor) -> torch.Tensor:
+        """
+        Method to execute the readout phase. (compute molecules encodings from atom hidden states)
+
+        Parameters
+        ----------
+         g: DGLGraph
+            A DGLGraph for a batch of graphs. It stores the node features in
+            ``dgl_graph.ndata[self.nfeat_name]`` and edge features in
+            ``dgl_graph.edata[self.efeat_name]``.
+
+        atoms_hidden_states: torch.Tensor
+            Tensor containing atom hidden states.
+
+        Returns
+        -------
+        molecule_hidden_state: torch.Tensor
+            Tensor containing molecule encodings.
+        """
+
+        g.ndata['emb'] = atoms_hidden_states
+        # graphs_list = dgl.unbatch(g=g)
+        # mol_feat_tensor_list = []
+        # for graph in graphs_list:
+        #     mol_feat_tensor_list.append(self._readout_per_g_new(graph))
+        
+        # batch_mol_hidden_states = torch.stack(mol_feat_tensor_list, dim=0)
+        batch_mol_hidden_states = self._readout_per_g_new(g=g)
+        return batch_mol_hidden_states  # batch_size x (node_out_feats + bond_dim)
+    
+    def _readout_per_g_new(self, g) -> torch.Tensor:
+        """
+        a reduce-sum across atoms per graph
+        
+        Parameters
+        ----------
+         g: DGLGraph
+            A DGLGraph for a batch of graphs. It stores the node features in
+            ``dgl_graph.ndata[self.nfeat_name]`` and edge features in
+            ``dgl_graph.edata[self.efeat_name]``.
+
+        Returns
+        -------
+        molecule_hidden_state: torch.Tensor
+            Tensor containing molecule encodings.
+        """
+        def message_func(edges):
+            src_msg = torch.cat((edges.src['emb'], edges.data['edge_attr']), dim=1)
+            return {'src_msg': src_msg}
+        
+        def reduce_func(nodes):
+            src_msg_sum = torch.sum(nodes.mailbox['src_msg'], dim=1)
+            return {'src_msg_sum': src_msg_sum}
+
+        g.send_and_recv(g.edges(), message_func=message_func, reduce_func=reduce_func)
+
+        molecule_hidden_state = dgl.sum_nodes(g, 'src_msg_sum')
+        # molecule_hidden_state: torch.Tensor = torch.sum(g.ndata['src_msg_sum'], dim=0)
+        return molecule_hidden_state  # (node_out_feats + bond_dim)
+
     def forward(self, g):
         """Predict graph labels
 
@@ -243,14 +304,33 @@ class CustomMPNN(nn.Module):
         node_feats = g.ndata[self.nfeat_name]
         edge_feats = g.edata[self.efeat_name]
         
+        # checkpoint_1 = dt.datetime.now()
+        # print("checkpoint 1: ", dt.datetime.now())
         node_encodings = self.mpnn(g, node_feats, edge_feats)
-        for p in self.mpnn.named_parameters():
-            if torch.isnan(p[1]).any():
-                print(p[0])
-        if torch.isnan(node_encodings).any():
-            raise Exception("contains NaN!")
-        molecular_encodings = self._readout(g, node_encodings)
+        
+        # for p in self.mpnn.named_parameters():
+        #     if torch.isnan(p[1]).any():
+        #         print(p[0])
+        # if torch.isnan(node_encodings).any():
+        #     raise Exception("contains NaN!")
+        
+        # checkpoint_2 = dt.datetime.now()
+        # checkpoint_1_2_diff = checkpoint_2 - checkpoint_1
+        # print("checkpoint_1_2_diff: ", checkpoint_1_2_diff)
+        
+        # molecular_encodings = self._readout(g, node_encodings)
+        molecular_encodings = self._readout_new(g, node_encodings)
+
+        
+        # checkpoint_3 = dt.datetime.now()
+        # checkpoint_2_3_diff = checkpoint_3 - checkpoint_2
+        # print("checkpoint_2_3_diff: ", checkpoint_2_3_diff)
+        
         embeddings, out = self.ffn(molecular_encodings)
+        
+        # checkpoint_4 = dt.datetime.now()
+        # checkpoint_3_4_diff = checkpoint_4 - checkpoint_3
+        # print("checkpoint_3_4_diff: ", checkpoint_3_4_diff)
 
         if self.mode == 'classification':
             if self.n_tasks == 1:
@@ -409,8 +489,8 @@ class CustomMPNNModel(TorchModel):
         l2_regularization = torch.tensor(0., requires_grad=True).to('cuda' if torch.cuda.is_available() else 'cpu')
         for name, param in self.model.named_parameters():
             if 'bias' not in name:
-                l1_regularization += torch.norm(param, p=1) #l1
-                l2_regularization += torch.norm(param, p=2) #l2
+                l1_regularization = l1_regularization + torch.norm(param, p=1) #l1
+                l2_regularization = l2_regularization + torch.norm(param, p=2) #l2
         l1_norm = self.weight_decay * l1_regularization
         l2_norm = self.weight_decay * l2_regularization
         return l1_norm + l2_norm
