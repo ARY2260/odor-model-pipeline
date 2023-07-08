@@ -73,13 +73,16 @@ class CustomPositionwiseFeedForward(nn.Module):
 
         else:
             self.linears = [nn.Linear(d_input, d_hidden_list[0])]
-            
+            self.batchnorms = [nn.BatchNorm1d(d_hidden_list[0])]
+
             for idx in range(1, len(d_hidden_list)):
                 self.linears.append(nn.Linear(d_hidden_list[idx-1], d_hidden_list[idx]))
-            
+                self.batchnorms.append(nn.BatchNorm1d(d_hidden_list[idx]))
+
             self.linears.append(nn.Linear(d_hidden_list[-1], d_output))
 
         self.linears = nn.ModuleList(self.linears)
+        self.batchnorms = nn.ModuleList(self.batchnorms)
         dropout_layer = nn.Dropout(dropout_p)
         self.dropout_p = nn.ModuleList([dropout_layer for _ in range(self.n_layers)])
 
@@ -104,10 +107,10 @@ class CustomPositionwiseFeedForward(nn.Module):
             if self.dropout_at_input_no_act:
                 x = self.dropout_p[-1](x)
             for i in range(self.n_layers - 2):
-                x = self.dropout_p[i](self.activation(self.linears[i](x)))
+                x = self.dropout_p[i](self.activation(self.batchnorms[i](self.linears[i](x))))
 
             embeddings = self.linears[self.n_layers - 2](x)
-            x = self.dropout_p[self.n_layers - 2](self.activation(embeddings))
+            x = self.dropout_p[self.n_layers - 2](self.activation(self.batchnorms[self.n_layers - 2](embeddings)))
             output = self.linears[-1](x)
             return embeddings, output
 
