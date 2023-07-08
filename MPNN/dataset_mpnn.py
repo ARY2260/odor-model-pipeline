@@ -4,8 +4,8 @@ import pandas as pd
 
 def get_class_imbalance_ratio(df):
     class_counts = df.sum().to_numpy()
-    total = class_counts.sum()
-    class_imbalance_ratio = class_counts/total
+    max_count = max(class_counts)
+    class_imbalance_ratio = class_counts/max_count
     return class_imbalance_ratio.tolist()
     
 

@@ -146,6 +146,7 @@ loss(output, labels)
 import deepchem as dc
 from dataset_mpnn import get_dataset, get_class_imbalance_ratio
 from featurizer import GraphConvConstants
+import numpy as np
 #%%
 dataset, class_imbalance_ratio = get_dataset()
 #%%
@@ -181,6 +182,7 @@ def get_outliers(df):
     return outliers.dropna().index
 
 def ratio_analysis(new_ratios, original_ratios):
+    new_ratios, original_ratios = np.asarray(new_ratios), np.asarray(original_ratios)
     print(f"min ratio in new: {new_ratios.min()} and index: {new_ratios.argmin()}")
     print(f"min ratio in orignal: {original_ratios.min()} and index: {original_ratios.argmin()}")
     print()
