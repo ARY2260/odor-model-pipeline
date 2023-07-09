@@ -1,3 +1,4 @@
+#%%
 import pytest
 import deepchem as dc
 import tempfile
@@ -6,6 +7,7 @@ import numpy as np
 import os
 print(os.getcwd())
 from dataset_mpnn import get_dataset, get_class_imbalance_ratio
+from deepchem.models.optimizers import ExponentialDecay
 
 try:
     import torch
@@ -20,20 +22,22 @@ def test_custom_mpnn_model_classification(nb_epoch):
     torch.manual_seed(0)
 
     # load sample dataset
-    # dataset, _ = get_dataset(csv_path='assets/GS_LF_sample100.csv')
-    dataset, _ = get_dataset(csv_path='./../curated_GS_LF_merged_4984.csv')
+    dataset, _ = get_dataset(csv_path='assets/GS_LF_sample100.csv')
+    # dataset, _ = get_dataset(csv_path='./../curated_GS_LF_merged_4984.csv')
 
     randomstratifiedsplitter = dc.splits.RandomStratifiedSplitter()
     train_dataset, test_dataset = randomstratifiedsplitter.train_test_split(dataset, frac_train = 0.8, seed = 0)
     train_ratios = get_class_imbalance_ratio(pd.DataFrame(train_dataset.y))
 
+    learning_rate = ExponentialDecay(initial_rate=0.01, decay_rate=0.5, decay_steps=1, staircase=True)
+
     # initialize the model
     from custom_mpnn import CustomMPNNModel
     from featurizer import GraphConvConstants
 
-    model = CustomMPNNModel(n_tasks = 138,
+    model = CustomMPNNModel(n_tasks = 6,
                             batch_size=32,
-                            learning_rate=0.001,
+                            learning_rate=learning_rate,
                             class_imbalance_ratio = train_ratios,
                             node_out_feats = 50,
                             edge_hidden_feats = 120,
@@ -43,6 +47,8 @@ def test_custom_mpnn_model_classification(nb_epoch):
                             number_atom_features = GraphConvConstants.ATOM_FDIM,
                             number_bond_features = GraphConvConstants.BOND_FDIM,
                             n_classes = 1,
+                            num_step_set2set = 3,
+                            num_layer_set2set = 2,
                             ffn_hidden_list= [64, 64],
                             ffn_embeddings = 256,
                             ffn_activation = 'leakyrelu',
@@ -65,6 +71,6 @@ def test_custom_mpnn_model_classification(nb_epoch):
         test_scores = model.evaluate(test_dataset, [metric], n_classes=2)
         print(f"epoch {epoch}/{nb_epoch} ; loss = {loss}; train_scores = {train_scores}; test_scores = {test_scores}")
 
-
+#%%
 if __name__ == "__main__":
     test_custom_mpnn_model_classification(10)

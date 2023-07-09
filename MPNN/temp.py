@@ -147,6 +147,7 @@ import deepchem as dc
 from dataset_mpnn import get_dataset, get_class_imbalance_ratio
 from featurizer import GraphConvConstants
 import numpy as np
+import pandas as pd
 #%%
 dataset, class_imbalance_ratio = get_dataset()
 #%%
@@ -157,7 +158,7 @@ folds_list = randomstratifiedsplitter.k_fold_split(dataset=dataset, k=3)
 #%%
 train_dataset, test_dataset = folds_list[0]
 #%%
-import pandas as pd
+
 
 print(train_dataset.y.shape)
 train_y_df = pd.DataFrame(train_dataset.y)
@@ -218,8 +219,9 @@ ratio_analysis(test_ratios, train_ratios)
 # ['alcoholic', 'coconut', 'cortex', 'creamy', 'lily', 'musk', 'ozone', 'plum', 'radish', 'tea', 'tomato']
 #%%
 from skmultilearn.model_selection import IterativeStratification
+import tempfile
 
-def iterative_train_test_split(X, y, test_size, random_state=None):
+def iterative_train_test_split(dataset, test_size, random_state=None, train_dir=None, test_dir=None):
     """Iteratively stratified train/test split
 
     Parameters
@@ -235,7 +237,7 @@ def iterative_train_test_split(X, y, test_size, random_state=None):
     X_train, y_train, X_test, y_test
         stratified division into train/test split
     """
-
+    X, y = pd.DataFrame(dataset.X), pd.DataFrame(dataset.y)
     stratifier = IterativeStratification(
         n_splits=2,
         order=2,
@@ -244,18 +246,26 @@ def iterative_train_test_split(X, y, test_size, random_state=None):
         random_state=random_state,
     )
     train_indexes, test_indexes = next(stratifier.split(X, y))
-
-    X_train, y_train = X.iloc[train_indexes, :], y.iloc[train_indexes, :]
-    X_test, y_test = X.iloc[test_indexes, :], y.iloc[test_indexes, :]
-
-    return X_train, X_test, y_train, y_test
+    if train_dir is None:
+        train_dir = tempfile.mkdtemp()
+    # if valid_dir is None:
+    #     valid_dir = tempfile.mkdtemp()
+    if test_dir is None:
+        test_dir = tempfile.mkdtemp()
+    train_dataset = dataset.select(train_indexes.tolist(), train_dir)
+    # valid_dataset = dataset.select(valid_inds, valid_dir)
+    test_dataset = dataset.select(test_indexes.tolist(), test_dir)
+    if isinstance(train_dataset, dc.data.DiskDataset):
+        train_dataset.memory_cache_size = 40 * (1 << 20)  # 40 MB
+    return train_dataset, test_dataset
 #%%
-X, y = pd.DataFrame(dataset.X), pd.DataFrame(dataset.y)
-
-X_train, X_test, y_train, y_test = iterative_train_test_split(X, y, test_size=0.1, random_state=None)
+train_dataset, test_dataset = iterative_train_test_split(dataset, test_size=0.1, random_state=None)
 # %%
-train_ratios_is = get_class_imbalance_ratio(y_train)
-test_ratios_is = get_class_imbalance_ratio(y_test)
+print(train_dataset.y.shape)
+train_y_df = pd.DataFrame(train_dataset.y)
+test_y_df = pd.DataFrame(test_dataset.y)
+train_ratios_is = get_class_imbalance_ratio(train_y_df)
+test_ratios_is = get_class_imbalance_ratio(test_y_df)
 # %%
 ratio_analysis(train_ratios_is, class_imbalance_ratio)
 # %%

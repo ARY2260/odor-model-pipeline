@@ -16,6 +16,7 @@ from utils.train_utils import get_optimizer
 
 try:
     import dgl
+    from dgl.nn.pytorch import Set2Set
 except:
     raise ImportError('This class requires dgl.')
 
@@ -80,6 +81,8 @@ class CustomMPNN(nn.Module):
                  n_classes: int = 2,
                  nfeat_name: str = 'x',
                  efeat_name: str = 'edge_attr',
+                 num_step_set2set: int = 6,
+                 num_layer_set2set: int = 3,
                  ffn_hidden_list = [300],
                  ffn_embeddings: int = 300,
                  ffn_activation: str = 'relu',
@@ -153,12 +156,16 @@ class CustomMPNN(nn.Module):
             nn.Linear(number_bond_features, edge_out_feats),
             nn.ReLU()
         )
+
+        self.readout_set2set = Set2Set(input_dim=node_out_feats + edge_out_feats,
+                               n_iters=num_step_set2set,
+                               n_layers=num_layer_set2set)
         
         if ffn_embeddings is not None:
             ffn_hidden_list.append(ffn_embeddings)
 
         self.ffn: nn.Module = CustomPositionwiseFeedForward(
-            d_input=node_out_feats + edge_out_feats,
+            d_input=2*(node_out_feats + edge_out_feats),
             d_hidden_list=ffn_hidden_list,
             d_output=self.ffn_output,
             activation=ffn_activation,
@@ -275,7 +282,8 @@ class CustomMPNN(nn.Module):
 
         g.send_and_recv(g.edges(), message_func=message_func, reduce_func=reduce_func)
 
-        molecule_hidden_state = dgl.sum_nodes(g, 'src_msg_sum')
+        molecule_hidden_state = self.readout_set2set(g, g.ndata['src_msg_sum'])
+        # molecule_hidden_state = dgl.sum_nodes(g, 'src_msg_sum')
         # molecule_hidden_state: torch.Tensor = torch.sum(g.ndata['src_msg_sum'], dim=0)
         return molecule_hidden_state  # (node_out_feats + bond_dim)
 
@@ -397,6 +405,8 @@ class CustomMPNNModel(TorchModel):
                  number_atom_features: int = 30,
                  number_bond_features: int = 11,
                  n_classes: int = 2,
+                 num_step_set2set: int = 6,
+                 num_layer_set2set: int = 3,
                  ffn_hidden_list = [300],
                  ffn_embeddings: int = 300,
                  ffn_activation: str = 'relu',
@@ -454,6 +464,8 @@ class CustomMPNNModel(TorchModel):
                      number_atom_features=number_atom_features,
                      number_bond_features=number_bond_features,
                      n_classes=n_classes,
+                     num_step_set2set=num_step_set2set,
+                     num_layer_set2set=num_layer_set2set,
                      ffn_hidden_list=ffn_hidden_list,
                      ffn_embeddings=ffn_embeddings,
                      ffn_activation=ffn_activation,
