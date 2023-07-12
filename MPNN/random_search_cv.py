@@ -118,18 +118,19 @@ class CV:
 
 
 #%%
-import torch
-torch.cuda.get_device_name()
-device_list = [f'cuda:{i}' for i in range(torch.cuda.device_count())]
+# import torch
+# torch.cuda.get_device_name()
+# device_list = [f'cuda:{i}' for i in range(torch.cuda.device_count())]
 #%%
 
 def random_search_cv():
     # Dataset
-    dataset, _ = get_dataset(csv_path='assets/GS_LF_sample100.csv')
+    dataset, _ = get_dataset(csv_path='./../curated_GS_LF_merged_4984.csv')
     n_tasks = len(dataset.tasks)
-    n_folds = 2
+    n_folds = 5
     n_trials = 2
     logdir='./models'
+    max_epoch=3
 
     # Metric
     metric = dc.metrics.Metric(dc.metrics.roc_auc_score, threshold_value=0.5, classification_handling_mode='threshold')
@@ -156,7 +157,7 @@ def random_search_cv():
     all_scores = {}
     for trial_count, model_params in tqdm(trials_dict.items()):
         logger.info(f"{trial_count} starting:")
-        mean_train_score, mean_val_score = cv.cross_validation(model_params=model_params, logdir=logdir, max_epoch=2, metric=metric)
+        mean_train_score, mean_val_score = cv.cross_validation(model_params=model_params, logdir=logdir, max_epoch=max_epoch, metric=metric)
         all_scores[_convert_hyperparam_dict_to_filename(model_params)] = {'mean_train_score':mean_train_score, 'mean_val_score':mean_val_score}
         if mean_val_score > best_validation_score:
             best_train_score = mean_train_score
@@ -175,3 +176,6 @@ def random_search_cv():
                 str(best_hyperparams))
         f.write("Best validation score %f\n" % best_validation_score)
         f.write("Best train_score: %f\n" % best_train_score)
+
+if __name__ == "__main__":
+    random_search_cv()
