@@ -41,6 +41,10 @@ def test_custom_mpnn_model_classification(nb_epoch):
     valid_dataset, test_dataset = iterative_train_test_split(other_dataset, test_size= 0.5, random_state=None, train_dir=None, test_dir=None)
     train_ratios = get_class_imbalance_ratio(pd.DataFrame(train_dataset.y))
 
+    print("train_dataset: ", len(train_dataset))
+    print("valid_dataset: ", len(valid_dataset))
+    print("test_dataset: ", len(test_dataset))
+
     # learning_rate = ExponentialDecay(initial_rate=0.001, decay_rate=0.5, decay_steps=32*15, staircase=True)
 
     learning_rate = 0.001
@@ -57,10 +61,13 @@ def test_custom_mpnn_model_classification(nb_epoch):
                             edge_hidden_feats = 75,
                             edge_out_feats = 100,
                             num_step_message_passing = 5,
+                            mpnn_residual = True,
+                            message_aggregator_type = 'sum',
                             mode = 'classification',
                             number_atom_features = GraphConvConstants.ATOM_FDIM,
                             number_bond_features = GraphConvConstants.BOND_FDIM,
                             n_classes = 1,
+                            readout_type = 'set2set',
                             num_step_set2set = 3,
                             num_layer_set2set = 2,
                             ffn_hidden_list= [392, 392],
@@ -70,6 +77,7 @@ def test_custom_mpnn_model_classification(nb_epoch):
                             ffn_dropout_at_input_no_act = False,
                             weight_decay = 1e-5,
                             self_loop = False,
+                            optimizer_name = 'adam',
                             log_frequency = 32,
                             model_dir = './models')
 

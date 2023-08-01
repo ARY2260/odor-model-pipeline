@@ -38,27 +38,6 @@ class CustomMPNN(nn.Module):
         of all nodes in it, which involves a Set2Set layer.
     * Perform the final prediction using an MLP
 
-    Examples
-    --------
-
-    >>> import deepchem as dc
-    >>> import dgl
-    >>> from deepchem.models.torch_models import MPNN
-    >>> smiles = ["C1CCC1", "C1=CC=CN=C1"]
-    >>> featurizer = dc.feat.MolGraphConvFeaturizer(use_edges=True)
-    >>> graphs = featurizer.featurize(smiles)
-    >>> print(type(graphs[0]))
-    <class 'deepchem.feat.graph_data.GraphData'>
-    >>> dgl_graphs = [graphs[i].to_dgl_graph(self_loop=True) for i in range(len(graphs))]
-    >>> # Batch two graphs into a graph of two connected components
-    >>> batch_dgl_graph = dgl.batch(dgl_graphs)
-    >>> model = MPNN(n_tasks=1, mode='regression')
-    >>> preds = model(batch_dgl_graph)
-    >>> print(type(preds))
-    <class 'torch.Tensor'>
-    >>> preds.shape == (2, 1)
-    True
-
     References
     ----------
     .. [1] Justin Gilmer, Samuel S. Schoenholz, Patrick F. Riley, Oriol Vinyals, George E. Dahl.
@@ -76,16 +55,19 @@ class CustomMPNN(nn.Module):
                  edge_hidden_feats: int = 128,
                  edge_out_feats: int = 64,
                  num_step_message_passing: int = 3,
-                 mode: str = 'regression',
+                 mpnn_residual: bool = True,
+                 message_aggregator_type: str = 'sum', # sum or mean
+                 mode: str = 'classification',
                  number_atom_features: int = 30,
                  number_bond_features: int = 11,
                  n_classes: int = 2,
                  nfeat_name: str = 'x',
                  efeat_name: str = 'edge_attr',
+                 readout_type: str = 'set2set', # set2set or global_sum_pooling
                  num_step_set2set: int = 6,
                  num_layer_set2set: int = 3,
                  ffn_hidden_list = [300],
-                 ffn_embeddings: int = 300,
+                 ffn_embeddings: int = 256,
                  ffn_activation: str = 'relu',
                  ffn_dropout_p: float = 0.0,
                  ffn_dropout_at_input_no_act: bool = True):
@@ -101,7 +83,7 @@ class CustomMPNN(nn.Module):
         num_step_message_passing: int
             The number of rounds of message passing. Default to 3.
         mode: str
-            The model type, 'classification' or 'regression'. Default to 'regression'.
+            The model type, 'classification' or 'regression'. Default to 'classification'.
         number_atom_features: int
             The length of the initial atom feature vectors. Default to 30.
         number_bond_features: int
@@ -139,6 +121,7 @@ class CustomMPNN(nn.Module):
         self.n_classes = n_classes
         self.nfeat_name = nfeat_name
         self.efeat_name = efeat_name
+        self.readout_type = readout_type
         self.ffn_embeddings = ffn_embeddings
         self.ffn_activation = ffn_activation
         self.ffn_dropout_p = ffn_dropout_p
@@ -151,84 +134,35 @@ class CustomMPNN(nn.Module):
                            node_out_feats=node_out_feats,
                            edge_in_feats=number_bond_features,
                            edge_hidden_feats=edge_hidden_feats,
-                           num_step_message_passing=num_step_message_passing)
+                           num_step_message_passing=num_step_message_passing,
+                           residual=mpnn_residual,
+                           message_aggregator_type=message_aggregator_type)
 
         self.project_edge_feats = nn.Sequential(
             nn.Linear(number_bond_features, edge_out_feats),
             nn.ReLU()
         )
 
-        self.readout_set2set = Set2Set(input_dim=node_out_feats + edge_out_feats,
-                               n_iters=num_step_set2set,
-                               n_layers=num_layer_set2set)
-        
+        if self.readout_type == 'set2set':
+            self.readout_set2set = Set2Set(input_dim=node_out_feats + edge_out_feats,
+                                n_iters=num_step_set2set,
+                                n_layers=num_layer_set2set)
+            ffn_input = 2*(node_out_feats + edge_out_feats)
+        elif self.readout_type == 'global_sum_pooling':
+            ffn_input = node_out_feats + edge_out_feats
+        else:
+            raise Exception("readout_type invalid")
+
         if ffn_embeddings is not None:
             ffn_hidden_list.append(ffn_embeddings)
 
         self.ffn: nn.Module = CustomPositionwiseFeedForward(
-            d_input=2*(node_out_feats + edge_out_feats),
+            d_input=ffn_input,
             d_hidden_list=ffn_hidden_list,
             d_output=self.ffn_output,
             activation=ffn_activation,
             dropout_p=ffn_dropout_p,
             dropout_at_input_no_act=ffn_dropout_at_input_no_act)
-
-    def _readout(self, g, atoms_hidden_states: torch.Tensor) -> torch.Tensor:
-        """
-        Method to execute the readout phase. (compute molecules encodings from atom hidden states)
-
-        Parameters
-        ----------
-         g: DGLGraph
-            A DGLGraph for a batch of graphs. It stores the node features in
-            ``dgl_graph.ndata[self.nfeat_name]`` and edge features in
-            ``dgl_graph.edata[self.efeat_name]``.
-
-        atoms_hidden_states: torch.Tensor
-            Tensor containing atom hidden states.
-
-        Returns
-        -------
-        molecule_hidden_state: torch.Tensor
-            Tensor containing molecule encodings.
-        """
-
-        g.ndata['emb'] = atoms_hidden_states
-        graphs_list = dgl.unbatch(g=g)
-        mol_feat_tensor_list = []
-        for graph in graphs_list:
-            mol_feat_tensor_list.append(self._readout_per_g(graph))
-        
-        batch_mol_hidden_states = torch.stack(mol_feat_tensor_list, dim=0)
-        return batch_mol_hidden_states  # batch_size x (node_out_feats + bond_dim)
-    
-    def _readout_per_g(self, g) -> torch.Tensor:
-        """
-        a reduce-sum across atoms per graph
-        
-        Parameters
-        ----------
-         g: DGLGraph
-            A DGLGraph for a batch of graphs. It stores the node features in
-            ``dgl_graph.ndata[self.nfeat_name]`` and edge features in
-            ``dgl_graph.edata[self.efeat_name]``.
-
-        Returns
-        -------
-        molecule_hidden_state: torch.Tensor
-            Tensor containing molecule encodings.
-        """
-        def message_func(edges):
-            src_msg = torch.cat((edges.src['emb'], edges.data['edge_attr']), dim=1)
-            return {'src_msg': src_msg}
-        
-        def reduce_func(nodes):
-            src_msg_sum = torch.sum(nodes.mailbox['src_msg'], dim=1)
-            return {'src_msg_sum': src_msg_sum}
-
-        g.send_and_recv(g.edges(), message_func=message_func, reduce_func=reduce_func)
-        molecule_hidden_state: torch.Tensor = torch.sum(g.ndata['src_msg_sum'], dim=0)
-        return molecule_hidden_state  # (node_out_feats + bond_dim)
 
     def _readout_new(self, g, atoms_hidden_states: torch.Tensor, edge_feats: torch.Tensor) -> torch.Tensor:
         """
@@ -283,8 +217,10 @@ class CustomMPNN(nn.Module):
 
         g.send_and_recv(g.edges(), message_func=message_func, reduce_func=reduce_func)
 
-        molecule_hidden_state = self.readout_set2set(g, g.ndata['src_msg_sum'])
-        # molecule_hidden_state = dgl.sum_nodes(g, 'src_msg_sum')
+        if self.readout_type == 'set2set':
+            molecule_hidden_state = self.readout_set2set(g, g.ndata['src_msg_sum'])
+        elif self.readout_type == 'global_sum_pooling':
+            molecule_hidden_state = dgl.sum_nodes(g, 'src_msg_sum')
         # molecule_hidden_state: torch.Tensor = torch.sum(g.ndata['src_msg_sum'], dim=0)
         return molecule_hidden_state  # (node_out_feats + bond_dim)
 
@@ -332,7 +268,9 @@ class CustomMPNN(nn.Module):
         
         # molecular_encodings = self._readout(g, node_encodings)
         molecular_encodings = self._readout_new(g, node_encodings, edge_feats)
-        # molecular_encodings = F.softmax(molecular_encodings, dim=1)
+
+        if self.readout_type == 'global_sum_pooling':
+            molecular_encodings = F.softmax(molecular_encodings, dim=1)
 
         
         # checkpoint_3 = dt.datetime.now()
@@ -403,10 +341,13 @@ class CustomMPNNModel(TorchModel):
                  edge_hidden_feats: int = 128,
                  edge_out_feats: int = 64,
                  num_step_message_passing: int = 3,
+                 mpnn_residual: bool = True,
+                 message_aggregator_type: str = 'sum', # sum or mean
                  mode: str = 'regression',
                  number_atom_features: int = 30,
                  number_bond_features: int = 11,
                  n_classes: int = 2,
+                 readout_type: str = 'set2set', # set2set or global_sum_pooling
                  num_step_set2set: int = 6,
                  num_layer_set2set: int = 3,
                  ffn_hidden_list = [300],
@@ -462,10 +403,13 @@ class CustomMPNNModel(TorchModel):
                      edge_hidden_feats=edge_hidden_feats,
                      edge_out_feats = edge_out_feats,
                      num_step_message_passing=num_step_message_passing,
+                     mpnn_residual=mpnn_residual,
+                     message_aggregator_type=message_aggregator_type,
                      mode=mode,
                      number_atom_features=number_atom_features,
                      number_bond_features=number_bond_features,
                      n_classes=n_classes,
+                     readout_type=readout_type,
                      num_step_set2set=num_step_set2set,
                      num_layer_set2set=num_layer_set2set,
                      ffn_hidden_list=ffn_hidden_list,

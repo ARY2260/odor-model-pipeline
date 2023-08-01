@@ -36,7 +36,7 @@ class CustomMPNNGNN(nn.Module):
         Number of message passing steps. Default to 6.
     """
     def __init__(self, node_in_feats, edge_in_feats, node_out_feats=64,
-                 edge_hidden_feats=128, num_step_message_passing=6):
+                 edge_hidden_feats=128, num_step_message_passing=6, residual=True, message_aggregator_type='sum'):
         super(CustomMPNNGNN, self).__init__()
 
         self.project_node_feats = nn.Sequential(
@@ -53,8 +53,8 @@ class CustomMPNNGNN(nn.Module):
             in_feats=node_out_feats,
             out_feats=node_out_feats,
             edge_func=edge_network,
-            aggregator_type='sum',
-            residual=True
+            aggregator_type=message_aggregator_type,
+            residual=residual
         )
         self.gru = nn.GRU(node_out_feats, node_out_feats)
 
