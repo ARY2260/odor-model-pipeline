@@ -17,6 +17,7 @@ from utils.train_utils import get_optimizer
 try:
     import dgl
     from dgl.nn.pytorch import Set2Set
+    from custom_mpnngnn import CustomMPNNGNN
 except:
     raise ImportError('This class requires dgl.')
 
@@ -146,7 +147,7 @@ class CustomMPNN(nn.Module):
         else:
             self.ffn_output = n_tasks
 
-        self.mpnn = MPNNGNN(node_in_feats=number_atom_features,
+        self.mpnn = CustomMPNNGNN(node_in_feats=number_atom_features,
                            node_out_feats=node_out_feats,
                            edge_in_feats=number_bond_features,
                            edge_hidden_feats=edge_hidden_feats,
@@ -331,6 +332,7 @@ class CustomMPNN(nn.Module):
         
         # molecular_encodings = self._readout(g, node_encodings)
         molecular_encodings = self._readout_new(g, node_encodings, edge_feats)
+        # molecular_encodings = F.softmax(molecular_encodings, dim=1)
 
         
         # checkpoint_3 = dt.datetime.now()

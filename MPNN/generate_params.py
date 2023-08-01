@@ -1,3 +1,4 @@
+#%%
 import numpy as np
 import json
 import os
@@ -7,21 +8,21 @@ from typing import Dict, List, Any
 
 N_TRIALS = 30
 
-PARAMS_DICT = {'batch_size': [8, 32, 128, 256, 512],
-               'node_out_feats': [50, 250, 500],
-               'edge_hidden_feats': [50, 250, 500],
-               'edge_out_feats': [50, 250, 500],
-               'num_step_message_passing': [1, 3, 5],
-               'num_step_set2set': [1, 3, 5],
-               'num_layer_set2set': [1, 2, 3],
+PARAMS_DICT = {'batch_size': [128, 256],
+               'node_out_feats': list(range(1, 500, 50)),
+               'edge_hidden_feats': list(range(1, 500, 50)),
+               'edge_out_feats': list(range(1, 500, 50)),
+               'num_step_message_passing': list(range(1, 7, 1)),
                'ffn_hidden_list': [[64],
+                                   [256],
+                                   [392],
                                    [512],
                                    [64, 64],
-                                   [512, 512]],
+                                   [64, 256],],
                'ffn_activation': ['relu', 'leakyrelu'],
-               'ffn_dropout_p': [0.1, 0.4, 0.75],
-               'weight_decay': [0.0001, 1e-05, 1e-06],
-               'learning_rate': [0.1, 0.01, 0.001],
+               'ffn_dropout_p': np.linspace(0.05, 0.5, num=5).tolist(),
+               'weight_decay': [0.001, 0.0001, 1e-05, 1e-06],
+               'learning_rate': np.linspace(0.0005, 0.01, num=10).tolist(),
                'optimizer_name': ['adam']}
 
 
@@ -73,3 +74,6 @@ def generate_hyperparams(params_dict=PARAMS_DICT, n_trials=N_TRIALS, dir=None):
         json.dump(trials_dict, json_file, indent=4)
     
     return trials_dict, file_path
+#%%
+# generate_hyperparams()
+# %%

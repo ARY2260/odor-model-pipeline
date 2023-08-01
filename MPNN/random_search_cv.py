@@ -43,7 +43,7 @@ class CV:
         all_folds_train_scores = []
         all_folds_val_scores = []
         if metric is None:
-            metric = dc.metrics.Metric(dc.metrics.roc_auc_score, threshold_value=0.5, classification_handling_mode='threshold')
+            metric = dc.metrics.Metric(dc.metrics.roc_auc_score, threshold_value=0.51, classification_handling_mode='threshold')
         for fold_num, (train_dataset, valid_dataset) in enumerate(self.folds_list):
             logger.info("Fitting model %d/%d folds" %
                         (fold_num + 1, self.n_folds))
@@ -75,33 +75,38 @@ class CV:
             # model_ckpt_list = []
             best_train_score = 0 # train score for best validation
             best_val_score = 0
+            error = ""
             try:
-                for epoch in tqdm(range(max_epoch)):
-                    loss = model.fit(
+                # for epoch in tqdm(range(max_epoch)):
+                loss = model.fit(
                         train_dataset,
-                        nb_epoch=1,
+                        nb_epoch=max_epoch,
                         max_checkpoints_to_keep=1,
                         deterministic=False,
-                        restore=epoch > 0)
+                        restore=False)
 
                 #   if (epoch+1) % 5 == 0:
                     # ckpt_save_path = os.path.join(save_dir, f'{hp_str}_epoch_{epoch}_ckpt.pt')
                     # torch.save(model.model.state_dict(), ckpt_save_path)
                     # model_ckpt_list.append(ckpt_save_path)
                 #   metric = dc.metrics.Metric(dc.metrics.roc_auc_score, threshold_value=0.5, classification_handling_mode='threshold')
-                    train_score = model.evaluate(
-                        train_dataset, [metric], n_classes=2)['roc_auc_score']
-                    val_score = model.evaluate(
-                        valid_dataset, [metric], n_classes=2)['roc_auc_score']
-                    if val_score > best_val_score:
-                        best_val_score = val_score
-                        best_train_score = train_score
-                    logger.info(
-                        f"epoch {epoch}/{max_epoch} ; loss = {loss} ; train_score = {train_score} ; val_score = {val_score}")
+                    # train_score = model.evaluate(
+                    #     train_dataset, [metric], n_classes=2)['roc_auc_score']
+                    # val_score = model.evaluate(
+                    #     valid_dataset, [metric], n_classes=2)['roc_auc_score']
+                    # if val_score > best_val_score:
+                    #     best_val_score = val_score
+                    #     best_train_score = train_score
+                    # logger.info(
+                    #     f"epoch {epoch}/{max_epoch} ; loss = {loss}")
 
+                best_train_score = model.evaluate(
+                        train_dataset, [metric], n_classes=2)['roc_auc_score']
+                best_val_score = model.evaluate(
+                        valid_dataset, [metric], n_classes=2)['roc_auc_score']
             # Not all models have nb_epoch
             except Exception as e:
-                raise Exception(f"Training error: {e}")
+                error = f"Training error: {e}"
 
             all_folds_train_scores.append(best_train_score)
             all_folds_val_scores.append(best_val_score)
@@ -114,7 +119,7 @@ class CV:
         logger.info(f"fold validation scores: {all_folds_val_scores}")
         logger.info(f"mean train score: {mean_train_score}")
         logger.info(f"mean validation score: {mean_val_score}")
-        return mean_train_score, mean_val_score
+        return mean_train_score, mean_val_score, error
 
 
 #%%
@@ -125,12 +130,13 @@ class CV:
 
 def random_search_cv():
     # Dataset
-    dataset, _ = get_dataset(csv_path='./../curated_GS_LF_merged_4984.csv')
+    # dataset, _ = get_dataset(csv_path='./../curated_GS_LF_merged_4984.csv')
+    dataset, _ = get_dataset(csv_path='./../curated_GS_LF_merged_4983.csv')
     n_tasks = len(dataset.tasks)
-    n_folds = 5
-    n_trials = 2
+    n_folds = 2
+    n_trials = 50
     logdir='./models'
-    max_epoch=3
+    max_epoch=300
 
     # Metric
     metric = dc.metrics.Metric(dc.metrics.roc_auc_score, threshold_value=0.5, classification_handling_mode='threshold')
@@ -157,8 +163,21 @@ def random_search_cv():
     all_scores = {}
     for trial_count, model_params in tqdm(trials_dict.items()):
         logger.info(f"{trial_count} starting:")
-        mean_train_score, mean_val_score = cv.cross_validation(model_params=model_params, logdir=logdir, max_epoch=max_epoch, metric=metric)
-        all_scores[_convert_hyperparam_dict_to_filename(model_params)] = {'mean_train_score':mean_train_score, 'mean_val_score':mean_val_score}
+        trial_start_time = datetime.now()
+        mean_train_score, mean_val_score, error = cv.cross_validation(model_params=model_params, logdir=logdir, max_epoch=max_epoch, metric=metric)
+        trial_end_time = datetime.now()
+        
+        all_scores[trial_count] = {'mean_train_score':mean_train_score, 'mean_val_score':mean_val_score}
+        
+        current_date_time = str(datetime.now())
+        log_file = os.path.join(logdir, f'results_{trial_count}_trial_{current_date_time}.txt')
+        with open(log_file, 'w+') as f:
+            f.write("Hyperparameters dictionary %s\n" % str(model_params))
+            f.write("validation score %f\n" % mean_val_score)
+            f.write("train_score: %f\n" % mean_train_score)
+            f.write("trial_time: %s\n" % str(trial_end_time-trial_start_time))
+            f.write("error: %s\n" % error)
+
         if mean_val_score > best_validation_score:
             best_train_score = mean_train_score
             best_validation_score = mean_val_score
