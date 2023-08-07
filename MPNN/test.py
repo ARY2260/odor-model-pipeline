@@ -95,6 +95,7 @@ def test_custom_mpnn_model_classification(nb_epoch):
         train_scores = macro_averaged_auc_roc_eval(dataset=train_dataset, model=model)
         valid_scores = macro_averaged_auc_roc_eval(dataset=valid_dataset, model=model)
         print(f"epoch {epoch}/{nb_epoch} ; loss = {loss}; train_scores = {train_scores}; test_scores = {valid_scores}")
+        model.save_checkpoint()
         # pom_frame(model, dataset, epoch, './models/frames')
     # print(f"epoch {epoch}/{nb_epoch} ; loss = {loss}")
 

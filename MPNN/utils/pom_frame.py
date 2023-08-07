@@ -5,8 +5,9 @@ from scipy.stats import gaussian_kde
 import numpy as np
 import os
 
-def pom_frame(model, dataset, epoch, dir):
+def pom_frame(model, dataset, epoch, dir, is_preds=False, threshold=0.4):
     pom_embeds = model.predict_embedding(dataset)
+    y_preds = model.predict(dataset)
     required_desc = list(dataset.tasks)
     type1 = {'floral': '#F3F1F7', 'subs': {'muguet': '#FAD7E6', 'lavender': '#8883BE', 'jasmin': '#BD81B7'}}
     type2 = {'meaty': '#F5EBE8', 'subs': {'savory': '#FBB360', 'beefy': '#7B382A', 'roasted': '#F7A69E'}}
@@ -16,7 +17,17 @@ def pom_frame(model, dataset, epoch, dir):
     pca = PCA(n_components=2, iterated_power=10)  # You can choose the number of components you want (e.g., 2 for 2D visualization)
     reduced_features = pca.fit_transform(pom_embeds)
 
-    y = dataset.y
+    variance_explained = pca.explained_variance_ratio_
+
+    # Variance explained by PC1 and PC2
+    variance_pc1 = variance_explained[0]
+    variance_pc2 = variance_explained[1]
+
+    if is_preds:
+        y = np.where(y_preds>threshold, 1.0, 0.0)
+    else:
+        y = dataset.y
+
     # Generate grid points to evaluate the KDE on
     x_grid, y_grid = np.meshgrid(np.linspace(reduced_features[:, 0].min(), reduced_features[:, 0].max(), 500),
                                  np.linspace(reduced_features[:, 1].min(), reduced_features[:, 1].max(), 500))
@@ -40,11 +51,11 @@ def pom_frame(model, dataset, epoch, dir):
         legend = plt.legend(handles=legend_elements, title=main_label, bbox_to_anchor=bbox_to_anchor)
         legend.get_frame().set_facecolor(type_dictionary[main_label])
         plt.gca().add_artist(legend)
-    
-    plt.figure(figsize=(20, 12))
+
+    plt.figure(figsize=(15, 10))
     plt.title('KDE Density Estimation with Contours in Reduced Space')
-    plt.xlabel('Principal Component 1')
-    plt.ylabel('Principal Component 2')
+    plt.xlabel(f'Principal Component 1 ({round(variance_pc1*100, ndigits=2)}%)')
+    plt.ylabel(f'Principal Component 2 ({round(variance_pc2*100, ndigits=2)}%)')
     plot_contours(type_dictionary=type1, bbox_to_anchor = (0.2, 0.8))
     plot_contours(type_dictionary=type2, bbox_to_anchor = (0.9, 0.4))
     plot_contours(type_dictionary=type3, bbox_to_anchor = (0.3, 0.1))
