@@ -9,21 +9,30 @@ from typing import Dict, List, Any
 N_TRIALS = 30
 
 PARAMS_DICT = {'batch_size': [128, 256],
-               'node_out_feats': list(range(1, 500, 50)),
-               'edge_hidden_feats': list(range(1, 500, 50)),
-               'edge_out_feats': list(range(1, 500, 50)),
-               'num_step_message_passing': list(range(1, 7, 1)),
-               'ffn_hidden_list': [[64],
-                                   [256],
+               'node_out_feats': list(range(50, 300, 50)),
+               'edge_hidden_feats': list(range(50, 200, 25)),
+               'edge_out_feats': list(range(50, 300, 50)),
+               'num_step_message_passing': list(range(1, 6, 1)),
+               'mpnn_residual': [True, False],
+               'message_aggregator_type': ['sum', 'mean'],
+               'readout_type': ['set2set', 'global_sum_pooling'],
+               'num_step_set2set': [2, 3, 4, 5],
+               'num_layer_set2set': [1, 2, 3],
+               'ffn_hidden_list': [
+                                   [300],
                                    [392],
                                    [512],
-                                   [64, 64],
-                                   [64, 256],],
-               'ffn_activation': ['relu', 'leakyrelu'],
+                                   [300, 300],
+                                   [392, 392],
+                                   [512, 512],
+                                   [300, 300, 300],
+                                   [392, 392, 392],
+                                   [512, 512, 512],
+                                   ],
                'ffn_dropout_p': np.linspace(0.05, 0.5, num=5).tolist(),
                'weight_decay': [0.001, 0.0001, 1e-05, 1e-06],
-               'learning_rate': np.linspace(0.0005, 0.01, num=10).tolist(),
-               'optimizer_name': ['adam']}
+               'learning_rate': [0.0005, 0.001, 0.005, 0.01]
+               }
 
 
 def generate_random_hyperparam_values(params_dict: Dict,
@@ -75,5 +84,5 @@ def generate_hyperparams(params_dict=PARAMS_DICT, n_trials=N_TRIALS, dir=None):
     
     return trials_dict, file_path
 #%%
-# generate_hyperparams()
+# generate_hyperparams(n_trials=50)
 # %%

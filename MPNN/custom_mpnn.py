@@ -154,11 +154,11 @@ class CustomMPNN(nn.Module):
             raise Exception("readout_type invalid")
 
         if ffn_embeddings is not None:
-            ffn_hidden_list.append(ffn_embeddings)
+            d_hidden_list = ffn_hidden_list + [ffn_embeddings]
 
         self.ffn: nn.Module = CustomPositionwiseFeedForward(
             d_input=ffn_input,
-            d_hidden_list=ffn_hidden_list,
+            d_hidden_list=d_hidden_list,
             d_output=self.ffn_output,
             activation=ffn_activation,
             dropout_p=ffn_dropout_p,
