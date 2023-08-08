@@ -16,6 +16,7 @@ from generate_params import generate_hyperparams
 from utils.metric_func import macro_averaged_auc_roc_eval
 import torch
 import json
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -86,7 +87,7 @@ class CV:
             raise NotImplementedError
         return self.folds_list
 
-    def cross_validation(self, model_params, logdir=None, max_epoch=100, metric=None, device=None):
+    def cross_validation(self, model_params, logdir=None, max_epoch=100, metric=None, device=None, save_best_ckpt=False):
         logger.info("hyperparameters: %s" % str(model_params))
         all_folds_train_scores = []
         all_folds_val_scores = []
@@ -137,7 +138,8 @@ class CV:
                     if valid_scores > best_val_score:
                         best_val_score = valid_scores
                         best_train_score = train_scores
-                        # save_checkpoint(model, 1, None, f'best_chkpt_{fold_num}_')
+                        if save_best_ckpt:
+                            save_checkpoint(model, 1, None, f'best_ckpt_{fold_num}_')
                     logger.info(
                         f"epoch {epoch}/{max_epoch} ; loss = {loss}; train_scores = {train_scores}; test_scores = {valid_scores}")
 
@@ -151,8 +153,14 @@ class CV:
 
             all_folds_train_scores.append(best_train_score)
             all_folds_val_scores.append(best_val_score)
+            
+            try:
+                os.remove(os.path.join(model_dir, 'checkpoint1.pt'))
+            except:
+                pass
             del model
             torch.cuda.empty_cache()
+
         mean_train_score = np.asarray(all_folds_train_scores).mean()
         mean_val_score = np.asarray(all_folds_val_scores).mean()
         logger.info("Results:")
@@ -170,7 +178,7 @@ class CV:
 # device_list = [f'cuda:{i}' for i in range(torch.cuda.device_count())]
 #%%
 
-def random_search_cv(n_folds=2, n_trials=1, logdir='./models', max_epoch=10):
+def random_search_cv(n_folds=2, n_trials=1, logdir='./models', max_epoch=10, save_best_ckpt=False):
     # Dataset
     # dataset, _ = get_dataset(csv_path='./../curated_GS_LF_merged_4984.csv')
     dataset, _ = get_dataset(csv_path='./../curated_GS_LF_merged_4983.csv')
@@ -195,15 +203,16 @@ def random_search_cv(n_folds=2, n_trials=1, logdir='./models', max_epoch=10):
     
     cv = CV(model_builder=model_builder, n_folds=n_folds)
     cv.generate_folds(dataset=dataset, splitter='deepchem')
-    
-    # trials_dict, _ = generate_hyperparams(n_trials=n_trials)
-    
-    file_name = f"{n_trials}_trials_params.json"
-    cwd = os.getcwd()
-    file_path = os.path.join(cwd, file_name)
-    
-    with open(file_path, 'r') as json_file:
-        trials_dict = json.load(json_file)
+
+    try:
+        file_name = f"{n_trials}_trials_params.json"
+        cwd = os.getcwd()
+        file_path = os.path.join(cwd, file_name)
+        
+        with open(file_path, 'r') as json_file:
+            trials_dict = json.load(json_file)
+    except:
+        trials_dict, _ = generate_hyperparams(n_trials=n_trials)
 
 #     trials_dict = {
 #     "trial_1": {
@@ -237,7 +246,7 @@ def random_search_cv(n_folds=2, n_trials=1, logdir='./models', max_epoch=10):
         logger.info(f"{trial_count} starting:")
         model_params['trial_count'] = trial_count
         trial_start_time = datetime.now()
-        mean_train_score, mean_val_score, error = cv.cross_validation(model_params=model_params, logdir=logdir, max_epoch=max_epoch)
+        mean_train_score, mean_val_score, error = cv.cross_validation(model_params=model_params, logdir=logdir, max_epoch=max_epoch, save_best_ckpt=save_best_ckpt)
         trial_end_time = datetime.now()
         
         all_scores[trial_count] = {'mean_train_score':mean_train_score, 'mean_val_score':mean_val_score}
@@ -269,7 +278,20 @@ def random_search_cv(n_folds=2, n_trials=1, logdir='./models', max_epoch=10):
         f.write("Best validation score %f\n" % best_validation_score)
         f.write("Best train_score: %f\n" % best_train_score)
 #%%
+parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
+parser.add_argument("-f", "--n_folds", default=2, type=int, help="Number of folds for cross-validation")
+parser.add_argument("-t", "--n_trials", default=2, type=int, help="Number of trials for random search cv")
+parser.add_argument("-d", "--logdir", default="./models", help="Log directory to store results")
+parser.add_argument("-e", "--max_epoch", default=10, type=int, help="Number of epochs for each fold per trial")
+parser.add_argument("-c", "--save_best_ckpt", action="store_true", help="Whether to save best checkpoints?")
+args = vars(parser.parse_args())
+#%%
 if __name__ == "__main__":
-    random_search_cv(max_epoch=300, n_trials=50)
+    n_folds = args['n_folds']
+    n_trials = args['n_trials']
+    logdir = args['logdir']
+    max_epoch = args['max_epoch']
+    save_best_ckpt = args['save_best_ckpt']
+    random_search_cv(n_folds=n_folds, n_trials=n_trials, logdir=logdir, max_epoch=max_epoch, save_best_ckpt=save_best_ckpt)
 
 # %%

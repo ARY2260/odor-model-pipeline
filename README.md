@@ -11,7 +11,16 @@ pip install  dglgo -f https://data.dgl.ai/wheels-test/repo.html
 pip install dgllife
 pip install pytest
 pip install ipykernel
+pip install scikit-multilearn
 ```
+
+## [50 trial - 5 fold - 200 epoch] Random Search CV search
+```
+conda activate odor_pom
+cd MPNN
+python random_search_cv.py -f 5 -t 50 -e 200
+```
+
 ## MultiGPU Random Search CV test
 ```
 conda activate odor_pom
