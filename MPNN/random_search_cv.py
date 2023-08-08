@@ -269,7 +269,7 @@ def random_search_cv(n_folds=2, n_trials=1, logdir='./models', max_epoch=10):
         f.write("Best validation score %f\n" % best_validation_score)
         f.write("Best train_score: %f\n" % best_train_score)
 #%%
-# if __name__ == "__main__":
-random_search_cv(max_epoch=2, n_trials=2)
+if __name__ == "__main__":
+    random_search_cv(max_epoch=300, n_trials=50)
 
 # %%
